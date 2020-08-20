@@ -4,8 +4,8 @@
 
 
 #include <stdio.h>
-#include <limits.h>
 #include <string.h>
+#include <limits.h>
 #define SIZE 6
 
 void fcfs(int arrival[], int burst[], int n){                          // first come first serve
@@ -71,11 +71,12 @@ void sjf(int arrival[], int burst[], int n){                          // shortes
       if(pending[sorted[j]] && burst[sorted[j]] < shortest_burst){
         shortest_burst = burst[sorted[j]];
         shortest_index = sorted[j];
-      waiting[shortest_index] = current_time - arrival[shortest_index];
-      current_time += burst[shortest_index];
-      turnaround[shortest_index] = current_time - arrival[shortest_index]
       }
     }
+    waiting[shortest_index] = current_time - arrival[shortest_index];
+    current_time += burst[shortest_index];
+    turnaround[shortest_index] = current_time - arrival[shortest_index];
+    pending[shortest_index] = 0;
   }
 
   printf("SCHEDULING ALGORITHM - SHORTEST JOB FIRST\n");
@@ -99,6 +100,6 @@ int main(int argc, char const *argv[]) {
   int priority[SIZE] = {5, 3, 2, 4, 6, 1};
   int n = SIZE;
   //check if n is > 0
-  fcfs(arrival, burst, n);
+  sjf(arrival, burst, n);
   return 0;
 }
