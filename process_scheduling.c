@@ -1,18 +1,19 @@
 // Bugs So Far:
 // SJF won't work if burst time is INT_MAX
 
+
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
 #define SIZE 6
 
-void sort(int arrival[], int n, int sorted[]){
+void sort(int key[], int n, int sorted[]){
     int i, j, temp;
     for(i = 0; i < n; i++)
         sorted[i] = i;
     for(i = 0; i < n - 1; i++){
         for(j = 0; j < n - 1 - i; j++){
-            if(arrival[sorted[j]] > arrival[sorted[j+1]]){
+            if(key[sorted[j]] > key[sorted[j+1]]){
                 temp = sorted[j];
                 sorted[j] = sorted[j+1];
                 sorted[j+1] = temp;
@@ -78,36 +79,52 @@ void sjf(int arrival[], int burst[], int sorted[], int n){                      
         printf("  %-8d       %-13d      %d\n", i+1, turnaround[i], waiting[i]);
 }
 
-void rr(int arrival[], int burst[], int n, int quantum){                          // round robin
+void rr(int arrival[], int burst[], int sorted[], int n, int quantum){                          // round robin
     int turnaround[n];
     int waiting[n];
     int remaining_burst[n];
     int remaining_count = n;
-    int i, current_time;
+    int i, j, current_time, idle;
 
     remaining_count = n;
     for(i = 0; i < n; i++)
         remaining_burst[i] = burst[i];
 
     // finding starting time
-    for(i = 0, current_time = arrival[0]; i < n; i++)
-        if(arrival[i] < current_time)
-            current_time = arrival[i];
+    current_time = arrival[sorted[0]];
 
     i = 0;
+    idle = 0;
     while(remaining_count){
-        if(remaining_burst[i] > quantum){
+        if(remaining_burst[i] > quantum && arrival[i] <= current_time){
             current_time += quantum;
             remaining_burst[i] -= quantum;
+            if(idle)
+                idle--;
         }
-        else if(remaining_burst[i]){
+        else if(remaining_burst[i] && (arrival[i] <= current_time)){
             current_time += remaining_burst[i];
             remaining_burst[i] = 0;
             remaining_count--;
             turnaround[i] = current_time - arrival[i];
             waiting[i] = turnaround[i] - burst[i];
+            if(idle)
+                idle--;
         }
         i = (i + 1) % n;
+        if(i == 0){
+            if(!idle)
+                idle++;
+            else{
+                for(j = 0; j < n; j++){
+                    if(remaining_burst[sorted[j]]){
+                        current_time = arrival[sorted[j]];
+                        break;
+                    }
+                }
+            }
+        }
+
     }
 
     printf("SCHEDULING ALGORITHM - ROUND ROBIN\n");
@@ -118,6 +135,7 @@ void rr(int arrival[], int burst[], int n, int quantum){                        
 }
 
 void p(){                          // priority
+
 
 }
 
@@ -130,6 +148,6 @@ int main(int argc, char const *argv[]) {
     int sorted[n];
     sort(arrival, n, sorted);
     //check if n is > 0
-    rr(arrival, burst, n, quantum);
+    rr(arrival, burst, sorted, n, quantum);
     return 0;
 }
