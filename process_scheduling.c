@@ -25,7 +25,7 @@ void sort(int key[], int n, int sorted[]){
 void fcfs(int arrival[], int burst[], int sorted[], int n){                          // first come first serve
     int turnaround[n];
     int waiting[n];
-    int i, j, temp;
+    int i, j;
 
     waiting[sorted[0]] = 0;
     turnaround[sorted[0]] = burst[sorted[0]];
@@ -47,7 +47,7 @@ void sjf(int arrival[], int burst[], int sorted[], int n){                      
     int pending[n];
     int turnaround[n];
     int waiting[n];
-    int i, j, temp, current_time, shortest_index, shortest_burst;
+    int i, j, current_time, shortest_index, shortest_burst;
 
     for(i = 0; i < n; i++)
         pending[i] = 1;
@@ -73,7 +73,7 @@ void sjf(int arrival[], int burst[], int sorted[], int n){                      
     }
 
     printf("SCHEDULING ALGORITHM - SHORTEST JOB FIRST\n");
-    printf("-----------------------------------------\n");
+    printf("--------------------------------------------\n");
     printf("Process  |  Turnaround Time  |  Waiting Time\n");
     for(i = 0; i < n; i++)
         printf("  %-8d       %-13d      %d\n", i+1, turnaround[i], waiting[i]);
@@ -86,7 +86,6 @@ void rr(int arrival[], int burst[], int sorted[], int n, int quantum){          
     int remaining_count = n;
     int i, j, current_time, idle;
 
-    remaining_count = n;
     for(i = 0; i < n; i++)
         remaining_burst[i] = burst[i];
 
@@ -128,14 +127,46 @@ void rr(int arrival[], int burst[], int sorted[], int n, int quantum){          
     }
 
     printf("SCHEDULING ALGORITHM - ROUND ROBIN\n");
-    printf("----------------------------------\n");
+    printf("--------------------------------------------\n");
     printf("Process  |  Turnaround Time  |  Waiting Time\n");
     for(i = 0; i < n; i++)
         printf("  %-8d       %-13d      %d\n", i+1, turnaround[i], waiting[i]);
 }
 
-void p(){                          // priority
+void p(int arrival[], int burst[], int priority[], int sorted[], int n){                          // priority
+    int turnaround[n], waiting[n], pending[n];
+    int i, j, current_time, prio_index;
 
+    for(i = 0; i < n; i++)
+        pending[i] = 1;
+
+    current_time = arrival[sorted[0]];
+    for(i = 0; i < n; i++){
+        // find first pending process that has already arrived
+        for(j = 0; j < n; j++)
+            if(pending[sorted[j]] && (arrival[sorted[j]] <= current_time)){
+                prio_index = j;
+                break;
+            }
+        if(j == n){
+            current_time = arrival[sorted[i]];
+            prio_index = i;
+        }      
+        for(j = 0; j < n; j++){
+            if(pending[sorted[j]] && (priority[sorted[j]] < priority[sorted[prio_index]]) && (arrival[sorted[j]] <= current_time))
+                prio_index = j;
+        }
+        pending[sorted[prio_index]]--;
+        waiting[sorted[prio_index]] = current_time - arrival[sorted[prio_index]];
+        current_time += burst[sorted[prio_index]];
+        turnaround[sorted[prio_index]] = current_time - arrival[sorted[prio_index]];
+    }
+
+    printf("SCHEDULING ALGORITHM - PRIORITY\n");
+    printf("--------------------------------------------\n");
+    printf("Process  |  Turnaround Time  |  Waiting Time\n");
+    for(i = 0; i < n; i++)
+        printf("  %-8d       %-13d      %d\n", i+1, turnaround[i], waiting[i]);
 
 }
 
@@ -148,6 +179,6 @@ int main(int argc, char const *argv[]) {
     int sorted[n];
     sort(arrival, n, sorted);
     //check if n is > 0
-    rr(arrival, burst, sorted, n, quantum);
+    p(arrival, burst, priority, sorted, n);
     return 0;
 }
