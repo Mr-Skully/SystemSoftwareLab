@@ -1,5 +1,4 @@
 // Bugs So Far:
-// SJF stops if the CPU is idle in before executing all processes
 // SJF won't work if burst time is INT_MAX
 
 
@@ -73,10 +72,14 @@ void sjf(int arrival[], int burst[], int n){                          // shortes
         shortest_index = sorted[j];
       }
     }
-    waiting[shortest_index] = current_time - arrival[shortest_index];
-    current_time += burst[shortest_index];
-    turnaround[shortest_index] = current_time - arrival[shortest_index];
-    pending[shortest_index] = 0;
+    if(shortest_burst == INT_MAX)
+        current_time = arrival[sorted[i--]];
+    else{
+      waiting[shortest_index] = current_time - arrival[shortest_index];
+      current_time += burst[shortest_index];
+      turnaround[shortest_index] = current_time - arrival[shortest_index];
+      pending[shortest_index] = 0;
+    }
   }
 
   printf("SCHEDULING ALGORITHM - SHORTEST JOB FIRST\n");
