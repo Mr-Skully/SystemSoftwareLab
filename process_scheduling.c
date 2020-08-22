@@ -38,12 +38,12 @@ void fcfs(int arrival[], int burst[], int sorted[], int n){                     
         turnaround[sorted[i]] = waiting[sorted[i]] + burst[sorted[i]];
     }
     printf("\n[.] Process scheduling performed using First Come First Serve Algorithm.\n");
-    printf("SCHEDULING ALGORITHM - FIRST COME FIRST SERVE\n");
-    printf("---------------------------------------------\n");
-    printf("Process  |  Turnaround Time  |  Waiting Time\n");
+    fprintf(output, "SCHEDULING ALGORITHM - FIRST COME FIRST SERVE\n");
+    fprintf(output, "---------------------------------------------\n");
+    fprintf(output, "Process  |  Turnaround Time  |  Waiting Time\n");
     for(i = 0; i < n; i++)
-        printf("  %-8d       %-13d      %d\n", i+1, turnaround[i], waiting[i]);
-    printf("____________________________________________\n\n");
+        fprintf(output, "  %-8d       %-13d      %d\n", i+1, turnaround[i], waiting[i]);
+    fprintf(output, "____________________________________________\n\n");
 
 
 }
@@ -78,12 +78,12 @@ void sjf(int arrival[], int burst[], int sorted[], int n){                      
     }
 
     printf("\n[.] Process scheduling performed using Shortest Job First Algorithm.\n");
-    printf("SCHEDULING ALGORITHM - SHORTEST JOB FIRST\n");
-    printf("--------------------------------------------\n");
-    printf("Process  |  Turnaround Time  |  Waiting Time\n");
+    fprintf(output, "SCHEDULING ALGORITHM - SHORTEST JOB FIRST\n");
+    fprintf(output, "--------------------------------------------\n");
+    fprintf(output, "Process  |  Turnaround Time  |  Waiting Time\n");
     for(i = 0; i < n; i++)
-        printf("  %-8d       %-13d      %d\n", i+1, turnaround[i], waiting[i]);
-    printf("____________________________________________\n\n");
+        fprintf(output, "  %-8d       %-13d      %d\n", i+1, turnaround[i], waiting[i]);
+    fprintf(output, "____________________________________________\n\n");
 
 }
 
@@ -135,12 +135,12 @@ void rr(int arrival[], int burst[], int sorted[], int n, int quantum){          
     }
 
     printf("\n[.] Process scheduling performed using Round Robin Scheduling Algorithm.\n");
-    printf("SCHEDULING ALGORITHM - ROUND ROBIN\n");
-    printf("--------------------------------------------\n");
-    printf("Process  |  Turnaround Time  |  Waiting Time\n");
+    fprintf(output, "SCHEDULING ALGORITHM - ROUND ROBIN\n");
+    fprintf(output, "--------------------------------------------\n");
+    fprintf(output, "Process  |  Turnaround Time  |  Waiting Time\n");
     for(i = 0; i < n; i++)
-        printf("  %-8d       %-13d      %d\n", i+1, turnaround[i], waiting[i]);
-    printf("____________________________________________\n\n");
+        fprintf(output, "  %-8d       %-13d      %d\n", i+1, turnaround[i], waiting[i]);
+    fprintf(output, "____________________________________________\n\n");
 
 }
 
@@ -174,12 +174,12 @@ void p(int arrival[], int burst[], int priority[], int sorted[], int n){        
     }
 
     printf("\n[.] Process scheduling performed using Priority Scheduling Algorithm.\n");
-    printf("SCHEDULING ALGORITHM - PRIORITY\n");
-    printf("--------------------------------------------\n");
-    printf("Process  |  Turnaround Time  |  Waiting Time\n");
+    fprintf(output, "SCHEDULING ALGORITHM - PRIORITY\n");
+    fprintf(output, "--------------------------------------------\n");
+    fprintf(output, "Process  |  Turnaround Time  |  Waiting Time\n");
     for(i = 0; i < n; i++)
-        printf("  %-8d       %-13d      %d\n", i+1, turnaround[i], waiting[i]);
-    printf("____________________________________________\n\n");
+        fprintf(output, "  %-8d       %-13d      %d\n", i+1, turnaround[i], waiting[i]);
+    fprintf(output, "____________________________________________\n\n");
 
 }
 
@@ -258,7 +258,7 @@ int main(int argc, char const *argv[]) {
         printf("\n[.] Could not open output file.\n");
         exit(1);
     }
-    printf("\n[.] Writing to proc_schedule.txt.\n", );
+    printf("\n[.] Writing to proc_schedule.txt.\n");
 
     int sorted[n];
     sort(arrival, n, sorted);
@@ -273,7 +273,7 @@ int main(int argc, char const *argv[]) {
         p(arrival, burst, priority, sorted, n);
 
     fclose(output);
-    printf("\n[.] Finished writing to proc_schedule.txt.\n", );
+    printf("\n[.] Finished writing to proc_schedule.txt.\n");
 
     return 0;
 }
