@@ -3,9 +3,12 @@
 
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <limits.h>
-#define SIZE 6
+#define SIZE 50
+
+FILE *output;
 
 void sort(int key[], int n, int sorted[]){
     int i, j, temp;
@@ -34,12 +37,14 @@ void fcfs(int arrival[], int burst[], int sorted[], int n){                     
         waiting[sorted[i]] = waiting[sorted[i-1]] + burst[sorted[i-1]] - (arrival[sorted[i]] - arrival[sorted[i-1]]);
         turnaround[sorted[i]] = waiting[sorted[i]] + burst[sorted[i]];
     }
-
+    printf("\n[.] Process scheduling performed using First Come First Serve Algorithm.\n");
     printf("SCHEDULING ALGORITHM - FIRST COME FIRST SERVE\n");
     printf("---------------------------------------------\n");
     printf("Process  |  Turnaround Time  |  Waiting Time\n");
     for(i = 0; i < n; i++)
         printf("  %-8d       %-13d      %d\n", i+1, turnaround[i], waiting[i]);
+    printf("____________________________________________\n\n");
+
 
 }
 
@@ -72,11 +77,14 @@ void sjf(int arrival[], int burst[], int sorted[], int n){                      
         }
     }
 
+    printf("\n[.] Process scheduling performed using Shortest Job First Algorithm.\n");
     printf("SCHEDULING ALGORITHM - SHORTEST JOB FIRST\n");
     printf("--------------------------------------------\n");
     printf("Process  |  Turnaround Time  |  Waiting Time\n");
     for(i = 0; i < n; i++)
         printf("  %-8d       %-13d      %d\n", i+1, turnaround[i], waiting[i]);
+    printf("____________________________________________\n\n");
+
 }
 
 void rr(int arrival[], int burst[], int sorted[], int n, int quantum){                          // round robin
@@ -126,11 +134,14 @@ void rr(int arrival[], int burst[], int sorted[], int n, int quantum){          
 
     }
 
+    printf("\n[.] Process scheduling performed using Round Robin Scheduling Algorithm.\n");
     printf("SCHEDULING ALGORITHM - ROUND ROBIN\n");
     printf("--------------------------------------------\n");
     printf("Process  |  Turnaround Time  |  Waiting Time\n");
     for(i = 0; i < n; i++)
         printf("  %-8d       %-13d      %d\n", i+1, turnaround[i], waiting[i]);
+    printf("____________________________________________\n\n");
+
 }
 
 void p(int arrival[], int burst[], int priority[], int sorted[], int n){                          // priority
@@ -151,7 +162,7 @@ void p(int arrival[], int burst[], int priority[], int sorted[], int n){        
         if(j == n){
             current_time = arrival[sorted[i]];
             prio_index = i;
-        }      
+        }
         for(j = 0; j < n; j++){
             if(pending[sorted[j]] && (priority[sorted[j]] < priority[sorted[prio_index]]) && (arrival[sorted[j]] <= current_time))
                 prio_index = j;
@@ -162,23 +173,107 @@ void p(int arrival[], int burst[], int priority[], int sorted[], int n){        
         turnaround[sorted[prio_index]] = current_time - arrival[sorted[prio_index]];
     }
 
+    printf("\n[.] Process scheduling performed using Priority Scheduling Algorithm.\n");
     printf("SCHEDULING ALGORITHM - PRIORITY\n");
     printf("--------------------------------------------\n");
     printf("Process  |  Turnaround Time  |  Waiting Time\n");
     for(i = 0; i < n; i++)
         printf("  %-8d       %-13d      %d\n", i+1, turnaround[i], waiting[i]);
+    printf("____________________________________________\n\n");
 
 }
 
 int main(int argc, char const *argv[]) {
-    int arrival[SIZE] = {0, 1, 1, 6, 9, 9};
-    int burst[SIZE] = {3, 33, 4, 5, 23, 4};
-    int priority[SIZE] = {5, 3, 2, 4, 6, 1};
-    int n = SIZE;
-    int quantum = 3;                         // default time quantum
+
+    int fcfs_algo = 0, sjf_algo = 0, p_algo = 0, rr_algo = 0;
+    int i = 2;
+    int n = 0;
+    int quantum = 1;                         // default time quantum
+    char path[100] = ".\\";
+    int arrival[SIZE], burst[SIZE], priority[SIZE];
+
+    if(argc == 1){
+        printf("\nUSAGE: %s INPUT_FILENAME [option(s)]\n", argv[0]);
+        printf("\nOPTIONS:\n");
+        printf("       -fcfs             : Uses First Come First Serve Algorithm (used by default when no option is specified)\n");
+        printf("       -sjf              : Uses Shortest Job First Algorithm (Non-Preemptive)\n");
+        printf("       -p                : Uses Priority Scheduling Algorithm (Non-Preemptive)\n");
+        printf("       -rr TIME_QUANTUM  : Uses Round Robin Algorithm (Preemptive)\n");
+        printf("       (Example: %s input.txt -fcfs -rr 3 -p)\n", argv[0]);
+        printf("\nINPUT:\n   A text file.\n   Each line represents a single process.\n   Each line contains three 'space-seperated' integers.\n   The arrival time is the first integer, burst time is the second integer and priority is the third.\n   Even if priority scheduling is not used, specify arbitrary priorities for each process.\n   (Eg. 0 can be used as the priority for all the processes.)\n");
+        printf("\nOUTPUT:\n   A text file, \"proc_schedule.txt\".\n   If the file doesn't exist, a new file will be automatically created.\n   If the file exists, the new output will be appended to the original file.\n\n");
+        exit(0);
+    }
+    else if(argc == 2){
+        strcat(path, argv[1]);
+        fcfs_algo++;
+    }
+    else{
+        strcat(path, argv[1]);
+        while(i < argc){
+            if(!strcmp(argv[i], "-fcfs"))
+                fcfs_algo++;
+            else if(!strcmp(argv[i], "-sjf"))
+                sjf_algo++;
+            else if(!strcmp(argv[i], "-p"))
+                p_algo++;
+            else if(!strcmp(argv[i], "-rr")){
+                rr_algo++;
+                if((i+1 < argc) && atoi(argv[i+1])){
+                    quantum = atoi(argv[i+1]);
+                    i++;
+                }
+            }
+            else{
+              printf("\n[.] Invalid option.\n");
+              exit(0);
+            }
+            i++;
+        }
+    }
+
+
+    FILE *input;
+    input = fopen(path, "r");
+    if(!input){
+        printf("\n[.] Could not open input file.\n");
+        exit(1);
+    }
+    printf("\n[.] Reading %s.\n", argv[1]);
+
+    while(fscanf(input, "%d %d %d", &arrival[n], &burst[n], &priority[n]) == 3)
+        n++;
+
+    printf("\n[.] Finished reading %s.\n", argv[1]);
+    fclose(input);
+
+    if(!n){
+        printf("\n[.] Input file is empty.\n");
+        exit(1);
+    }
+
+
+    output = fopen(".\\proc_schedule.txt", "a");
+    if(!output){
+        printf("\n[.] Could not open output file.\n");
+        exit(1);
+    }
+    printf("\n[.] Writing to proc_schedule.txt.\n", );
+
     int sorted[n];
     sort(arrival, n, sorted);
-    //check if n is > 0
-    p(arrival, burst, priority, sorted, n);
+
+    if(fcfs_algo)
+        fcfs(arrival, burst, sorted, n);
+    if(sjf_algo)
+        sjf(arrival, burst, sorted, n);
+    if(rr_algo)
+        rr(arrival, burst, sorted, n, quantum);
+    if(p_algo)
+        p(arrival, burst, priority, sorted, n);
+
+    fclose(output);
+    printf("\n[.] Finished writing to proc_schedule.txt.\n", );
+
     return 0;
 }
