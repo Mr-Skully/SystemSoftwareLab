@@ -1,34 +1,34 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include <stdio.h>                            // for basic i/o
+#include <stdlib.h>                           // for exit()
 #define MAX_FILE_SIZE 20                      // defines the maximum possible file size of a file waiting for allocation
 
-FILE *output;
+FILE *output;                                 // output file pointer
 
-void sequential(const char * path){
+void sequential(const char * path){           // sequential file allocation algorithm
     int BLOCKS, i, j, k, n, r = 0;
 
-    FILE *input = fopen(path, "r");
+    FILE *input = fopen(path, "r");           // opening the input file in read mode
     if(!input){
         printf("\n[.] Could not read %s.\n\n", path);
         exit(1);
     }
     printf("\n[.] Reading %s.\n", path);
 
-    fscanf(input, "%d", &BLOCKS);
-    fscanf(input, "%d", &n);
+    fscanf(input, "%d", &BLOCKS);             // total blocks available
+    fscanf(input, "%d", &n);                  // total no. of processes waiting for file allocation
 
-    struct queue_element{                                     // queue of files waiting to be allocated
+    struct queue_element{
         int start;
         int length;
         char contents[MAX_FILE_SIZE];
         int allocated;
-    } queue[n];
+    } queue[n];                               // queue of files waiting to be allocated
 
-    for(i = 0; i < n; i++) {
+    for(i = 0; i < n; i++) {                  // reading details of files waiting to be allotted from input file
         fscanf(input, "%d %d %s", &queue[i].start, &queue[i].length, queue[i].contents);
         queue[i].allocated = 0;
     }
-    int requests[BLOCKS];
+    int requests[BLOCKS];                     // to store block no.s whose contents are to be displayed after allocation
     while(!feof(input) && fscanf(input, "%d", &requests[r]))
         r++;
 
@@ -40,10 +40,10 @@ void sequential(const char * path){
 
     for(i = 0; i < n; i++) {
         for(j = queue[i].start - 1; j < (queue[i].start + queue[i].length - 1) && j < BLOCKS && blocks[j] == 0; j++);
-        if(j == (queue[i].start + queue[i].length - 1)){           // checks whether the required memory is free
-            for(k = 0; k < queue[i].length; k++)               // writing string to memory
+        if(j == (queue[i].start + queue[i].length - 1)){            // checks whether the required memory is free
+            for(k = 0; k < queue[i].length; k++)                    // write the string to memory if space is available
                 blocks[queue[i].start - 1 + k] = queue[i].contents[k];
-            queue[i].allocated++;
+            queue[i].allocated++;                                   // mark the file as allotted
         }
     }
 
@@ -61,52 +61,52 @@ void sequential(const char * path){
     fprintf(output, "----------------------------------------\n");
     fprintf(output, "Block | Content\n\n");
     for(i = 0; i < r; i++)
-        fprintf(output, "  %-4d    %c\n", requests[i], blocks[requests[i] - 1]);
+        fprintf(output, "  %-4d    %c\n", requests[i], blocks[requests[i] - 1]?blocks[requests[i] - 1]:'-');
     fprintf(output, "________________________________________\n");
 
 }
 
-void linkedlist(const char * path){
+void linkedlist(const char * path){                                 // linked list file allocation algorithm
     int BLOCKS, i, j, k, m, source, destination, current, r = 0, n;
 
-    FILE *input = fopen(path, "r");
+    FILE *input = fopen(path, "r");                                 // read input file
     if(!input){
         printf("\n[.] Could not read %s.\n\n", path);
         exit(1);
     }
     printf("\n[.] Reading %s.\n", path);
 
-    fscanf(input, "%d", &BLOCKS);
-    fscanf(input, "%d", &m);
+    fscanf(input, "%d", &BLOCKS);                                   // total no. of blocks in memory
+    fscanf(input, "%d", &m);                                        // no. of links between nodes
 
-    int links[BLOCKS];        // links between nodes
-    for(i = 0; i < BLOCKS; links[i++] = 0);
+    int links[BLOCKS];                                              // to store the links between nodes
+    for(i = 0; i < BLOCKS; links[i++] = 0);                         // initializing to zero, to denote no links exist at initial stage, before reading from input file
 
-    for (i = 0; i < m; i++) {
+    for (i = 0; i < m; i++) {                                       // read links, from the first node to the last in the order of linkage
         fscanf(input, "%d %d", &source, &destination);
         links[source - 1] = destination;
         if(!i)
             current = source - 1;
     }
 
-    fscanf(input, "%d", &n);
+    fscanf(input, "%d", &n);                                        // no. of files waiting to be allotted
 
-    struct queue_element{                                     // queue of files waiting to be allocated
+    struct queue_element{
         int length;
         char contents[MAX_FILE_SIZE];
         int allocated;
         int start;
         int end;
-    } queue[n];
+    } queue[n];                                                     // queue of files waiting to be allocated
 
-    for(i = 0; i < n; i++){
+    for(i = 0; i < n; i++){                                         // read details of files in queue from input file
         fscanf(input, "%d %s", &queue[i].length, queue[i].contents);
         queue[i].allocated = queue[i].start = queue[i].end = 0;
     }
-    char blocks[BLOCKS];                                       // memory blocks
-    for(i = 0; i < BLOCKS; blocks[i++] = 0);                // initializing blocks to zero, to denote unallocated blocks
+    char blocks[BLOCKS];                                            // memory blocks
+    for(i = 0; i < BLOCKS; blocks[i++] = 0);                        // initializing blocks to zero, to denote unallocated blocks
 
-    int requests[BLOCKS];
+    int requests[BLOCKS];                                           // to store the process numbers whose allocation are to be displayed
     while(!feof(input) && fscanf(input, "%d", &requests[r]))
         r++;
 
@@ -118,13 +118,13 @@ void linkedlist(const char * path){
             break;
         // check whether memory is available for allocation
         for(j = current, k = 0; (k < queue[i].length) && !blocks[j]; j = links[j] - 1, k++){
-            if(!links[j]){                                     // check whether next node exists
+            if(!links[j]){                                     // checks whether next node exists
                 k++;
                 break;
             }
         }
 
-        if(k == queue[i].length){                              // write to memory if memory is available
+        if(k == queue[i].length){                              // write to memory if space is available
             queue[i].start = current + 1;
             queue[i].allocated++;
             for(j = current, k = 0; k < queue[i].length; j = links[j] - 1, k++){
@@ -160,40 +160,40 @@ void linkedlist(const char * path){
     fprintf(output, "___________________________________________________________\n");
 }
 
-void indexed(const char * path) {
+void indexed(const char * path) {                                   // indexed file allocation algorithm
     int BLOCKS, i, j, k, n, r = 0;
 
-    FILE *input = fopen(path, "r");
+    FILE *input = fopen(path, "r");                                 // read input file
     if (!input) {
         printf("\n[.] Could not read %s.\n\n", path);
         exit(1);
     }
     printf("\n[.] Reading %s.\n", path);
 
-    fscanf(input, "%d", &BLOCKS);
-    fscanf(input, "%d", &n);
+    fscanf(input, "%d", &BLOCKS);                                   // no. of memory blocks available
+    fscanf(input, "%d", &n);                                        // no. of processes waiting for file allocation
 
-    struct queue_element {                                     // queue of files waiting to be allocated
+    struct queue_element {
         int length;
         int index;
         char contents[MAX_FILE_SIZE];
         int allocated;
-    } queue[n];
+    } queue[n];                                                     // queue of files waiting to be allocated
 
     for (i = 0; i < n; i++) {
         fscanf(input, "%d %d %s", &queue[i].length, &queue[i].index, queue[i].contents);
         queue[i].allocated = 0;
     }
 
-    char blocks[BLOCKS];                                       // memory blocks
+    char blocks[BLOCKS];                                            // memory blocks
     for (i = 0;
-         i < BLOCKS; blocks[i++] = 0);                // initializing blocks to zero, to denote unallocated blocks
+         i < BLOCKS; blocks[i++] = 0);                              // initializing blocks to zero, to denote unallocated blocks
     int current = 0;
 
-    int index_table[BLOCKS];
+    int index_table[BLOCKS];                                        // to store the location of the index files that reference each block in memory
     for (i = 0; i < BLOCKS; index_table[i++] = 0);
 
-    int requests[BLOCKS];
+    int requests[BLOCKS];                                           // to store index no.s whose allocation is to be displayed
     while (!feof(input) && fscanf(input, "%d", &requests[r]))
         r++;
 
@@ -201,12 +201,12 @@ void indexed(const char * path) {
     fclose(input);
 
     for (i = 0; i < n; i++) {
-        if (!blocks[queue[i].index - 1] && !index_table[queue[i].index - 1]) {
-            index_table[queue[i].index - 1]--;
-            for (j = current, k = 0; k < queue[i].length && j < BLOCKS; k++, j++)
+        if (!blocks[queue[i].index - 1] && !index_table[queue[i].index - 1]) {           // check whether there is a file or an index present at the required block
+            index_table[queue[i].index - 1]--;                                           // index blocks are denoted in index_table[] by -1
+            for (j = current, k = 0; k < queue[i].length && j < BLOCKS; k++, j++)        // check whether space is available
                 if (blocks[j] || index_table[j])
                     k--;
-            if (k == queue[i].length) {
+            if (k == queue[i].length) {                                                  // write to memory if space is available
                 for (j = current, k = 0; k < queue[i].length; k++, j++) {
                     if (blocks[j] || index_table[j])
                         k--;
@@ -217,7 +217,7 @@ void indexed(const char * path) {
                 }
                 queue[i].allocated++;
                 current = j;
-            } else
+            } else                                                                       // if no space is available for file allocation
                 index_table[queue[i].index - 1]++;
         }
     }
@@ -258,7 +258,7 @@ int main(int argc, char const *argv[]) {
         exit(1);
     }
 
-    if((argc == 1) || (argc % 2 == 0)){                                                       // display documentation if no input file and options specified
+    if((argc == 1) || (argc % 2 == 0)){                              // display documentation if no input file or incorrect options specified
         printf("\nUSAGE: %s -OPTION INPUT_FILENAME [-OPTION(s) INPUT_FILENAME(s)]\n", argv[0]);
 
         printf("\nOPTIONS:\n");
