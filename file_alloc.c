@@ -47,14 +47,23 @@ void sequential(const char * path){
         }
     }
 
+    printf("\n[.] Using Sequential File Allocation Strategy.\n");
+    fprintf(output, "----------------------------------------\n");
+    fprintf(output, "SEQUENTIAL FILE ALLOCATION STRATEGY\n");
+    fprintf(output, "----------------------------------------\n");
+    fprintf(output, "Request's Starting Block | Status\n\n");
     for(i = 0; i < n; i++)
-        printf("%d\n", queue[i].allocated);
-    for(i = 0; i < BLOCKS; i++){
-        if(blocks[i])
-            printf("%c ", blocks[i]);
-        else
-            printf("- ");
-    }
+        fprintf(output, "           %-14d  %s\n", queue[i].start, queue[i].allocated?"Allocated":"Not Allocated");
+    fprintf(output, "----------------------------------------\n");
+    fprintf(output, "Block | Status\n\n");
+    for(i = 0; i < BLOCKS; i++)
+        fprintf(output, "  %-4d  %s\n", i + 1, blocks[i]?"Occupied":"Free");
+    fprintf(output, "----------------------------------------\n");
+    fprintf(output, "Block | Content\n\n");
+    for(i = 0; i < r; i++)
+        fprintf(output, "  %-4d    %c\n", requests[i], blocks[requests[i] - 1]);
+    fprintf(output, "________________________________________\n");
+
 }
 
 void linkedlist(const char * path){
@@ -128,22 +137,34 @@ void linkedlist(const char * path){
 
     }
 
-    for(i = 0; i < n; i++)
-        printf("%d %d %d\n", queue[i].start, queue[i].end, queue[i].allocated);
-    for(i = 0; i < BLOCKS; i++){
-        if(blocks[i])
-            printf("%c ", blocks[i]);
+    printf("\n[.] Using Linked List File Allocation Strategy.\n");
+    fprintf(output, "-----------------------------------------------------------\n");
+    fprintf(output, "LINKED LIST FILE ALLOCATION STRATEGY\n");
+    fprintf(output, "-----------------------------------------------------------\n");
+    fprintf(output, "Process | Starting Block | Ending Block | Status\n\n");
+    for(i = 0; i < n; i++){
+        fprintf(output, "   %-5d         ", i + 1);
+        if(queue[i].allocated)
+            fprintf(output, "%-8d       %-8d  Allocated\n", queue[i].start, queue[i].end);
         else
-            printf("- ");
+            fprintf(output, "-              -         Not Allocated\n");
     }
-
+    fprintf(output, "-----------------------------------------------------------\n");
+    fprintf(output, "Process | Block | Content\n\n");
+    for(i = 0; i < r; i++){
+        if(!queue[requests[i] - 1].allocated)
+            continue;
+        for(j = queue[requests[i] - 1].start - 1, k = 0; k < queue[requests[i] - 1].length; k++, j = links[j] - 1)
+            fprintf(output, "   %-5d    %-4d     %c\n", requests[i], j + 1, blocks[j]);
+    }
+    fprintf(output, "___________________________________________________________\n");
 }
 
-void indexed(const char * path){
+void indexed(const char * path) {
     int BLOCKS, i, j, k, n, r = 0;
 
     FILE *input = fopen(path, "r");
-    if(!input){
+    if (!input) {
         printf("\n[.] Could not read %s.\n\n", path);
         exit(1);
     }
@@ -152,65 +173,79 @@ void indexed(const char * path){
     fscanf(input, "%d", &BLOCKS);
     fscanf(input, "%d", &n);
 
-    struct queue_element{                                     // queue of files waiting to be allocated
+    struct queue_element {                                     // queue of files waiting to be allocated
         int length;
         int index;
         char contents[MAX_FILE_SIZE];
         int allocated;
     } queue[n];
 
-    for(i = 0; i < n; i++) {
+    for (i = 0; i < n; i++) {
         fscanf(input, "%d %d %s", &queue[i].length, &queue[i].index, queue[i].contents);
         queue[i].allocated = 0;
     }
 
     char blocks[BLOCKS];                                       // memory blocks
-    for(i = 0; i < BLOCKS; blocks[i++] = 0);                // initializing blocks to zero, to denote unallocated blocks
+    for (i = 0;
+         i < BLOCKS; blocks[i++] = 0);                // initializing blocks to zero, to denote unallocated blocks
     int current = 0;
 
     int index_table[BLOCKS];
-    for(i = 0; i < BLOCKS; index_table[i++] = 0);
+    for (i = 0; i < BLOCKS; index_table[i++] = 0);
 
     int requests[BLOCKS];
-    while(!feof(input) && fscanf(input, "%d", &requests[r]))
+    while (!feof(input) && fscanf(input, "%d", &requests[r]))
         r++;
 
     printf("\n[.] Finished reading %s.\n", path);
     fclose(input);
 
-    for(i = 0; i < n; i++) {
-        if(!blocks[queue[i].index - 1] && !index_table[queue[i].index - 1]){
+    for (i = 0; i < n; i++) {
+        if (!blocks[queue[i].index - 1] && !index_table[queue[i].index - 1]) {
             index_table[queue[i].index - 1]--;
-            for(j = current, k = 0; k < queue[i].length && j < BLOCKS; k++, j++)
-                    if(blocks[j] || index_table[j])
-                        k--;
-            if(k == queue[i].length){
-                for(j = current, k = 0; k < queue[i].length; k++, j++) {
-                    if(blocks[j] || index_table[j])
+            for (j = current, k = 0; k < queue[i].length && j < BLOCKS; k++, j++)
+                if (blocks[j] || index_table[j])
+                    k--;
+            if (k == queue[i].length) {
+                for (j = current, k = 0; k < queue[i].length; k++, j++) {
+                    if (blocks[j] || index_table[j])
                         k--;
                     else {
                         blocks[j] = queue[i].contents[k];
-                        index_table[j] = i + 1;
+                        index_table[j] = queue[i].index;
                     }
                 }
                 queue[i].allocated++;
                 current = j;
-            }
-            else
+            } else
                 index_table[queue[i].index - 1]++;
         }
     }
-    for(i = 0; i < n; i++)
-        printf("%d\n", queue[i].allocated);
-    for(i = 0; i < BLOCKS; i++)
-        if(blocks[i])
-            printf("%c ", blocks[i]);
-        else
-            printf("- ");
+    printf("\n[.] Using Indexed File Allocation Strategy.\n");
+    fprintf(output, "----------------------------------\n");
+    fprintf(output, "INDEXED FILE ALLOCATION STRATEGY\n");
+    fprintf(output, "----------------------------------\n");
+    fprintf(output, "Process | Index | Blocks Allocated\n\n");
+    for (i = 0; i < n; i++) {
+        fprintf(output, "   %-5d    %-4d   ", i + 1, queue[i].index);
+        if (queue[i].allocated) {
+            for (j = 0; j < BLOCKS; j++)
+                if (index_table[j] == queue[i].index)
+                    fprintf(output, "%d ", j + 1);
+            fprintf(output, "\n");
+        } else
+            fprintf(output, "Not Allocated\n");
 
-    for(i = 0; i < BLOCKS; i++)
-            printf("%d ", index_table[i]);
-
+    }
+    fprintf(output, "----------------------------------\n");
+    fprintf(output, "Index | Block | Content\n\n");
+    for (i = 0; i < r; i++) {
+        for (j = 0; j < BLOCKS; j++) {
+            if (requests[i] == index_table[j])
+                fprintf(output, "  %-4d    %-4d     %c\n", requests[i], j + 1, blocks[j]);
+        }
+    }
+    fprintf(output, "__________________________________\n");
 }
 
 int main(int argc, char const *argv[]) {
