@@ -1,12 +1,10 @@
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
-
-#define MAXSIZE 20        // no. of files waiting for allocation
+#define MAX_FILE_SIZE 20                      // defines the maximum possible file size of a file waiting for allocation
 
 FILE *output;
 
-void sequential(char path[]){
+void sequential(const char * path){
     int BLOCKS, i, j, k, n, r = 0;
 
     FILE *input = fopen(path, "r");
@@ -22,19 +20,23 @@ void sequential(char path[]){
     struct queue_element{                                     // queue of files waiting to be allocated
         int start;
         int length;
-        char * contents;
+        char contents[MAX_FILE_SIZE];
         int allocated;
     } queue[n];
 
-    for(i = 0; i < n; i++)
+    for(i = 0; i < n; i++) {
         fscanf(input, "%d %d %s", &queue[i].start, &queue[i].length, queue[i].contents);
-
+        queue[i].allocated = 0;
+    }
     int requests[BLOCKS];
-    while(fscanf(input, "%d", &requests[r]))
+    while(!feof(input) && fscanf(input, "%d", &requests[r]))
         r++;
 
-    char blocks[BLOCKS];                                       // memory blocks
+    char blocks[BLOCKS];                                    // memory blocks
     for(i = 0; i < BLOCKS; blocks[i++] = 0);                // initializing blocks to zero, to denote unallocated blocks
+
+    printf("\n[.] Finished reading %s.\n", path);
+    fclose(input);
 
     for(i = 0; i < n; i++) {
         for(j = queue[i].start - 1; j < (queue[i].start + queue[i].length - 1) && j < BLOCKS && blocks[j] == 0; j++);
@@ -55,8 +57,8 @@ void sequential(char path[]){
     }
 }
 
-void linkedlist(char path[]){
-    int BLOCKS, i, j, k, x, n = 4;
+void linkedlist(const char * path){
+    int BLOCKS, i, j, k, m, source, destination, current, r = 0, n;
 
     FILE *input = fopen(path, "r");
     if(!input){
@@ -66,25 +68,41 @@ void linkedlist(char path[]){
     printf("\n[.] Reading %s.\n", path);
 
     fscanf(input, "%d", &BLOCKS);
+    fscanf(input, "%d", &m);
+
+    int links[BLOCKS];        // links between nodes
+    for(i = 0; i < BLOCKS; links[i++] = 0);
+
+    for (i = 0; i < m; i++) {
+        fscanf(input, "%d %d", &source, &destination);
+        links[source - 1] = destination;
+        if(!i)
+            current = source - 1;
+    }
+
+    fscanf(input, "%d", &n);
 
     struct queue_element{                                     // queue of files waiting to be allocated
         int length;
-        char * contents;
+        char contents[MAX_FILE_SIZE];
         int allocated;
         int start;
         int end;
-    } queue[MAXSIZE] = {
-            {3, "abc", 0, 0, 0},
-            {1, "x", 0, 0, 0},
-            {2, "yz", 0, 0, 0},
-            {3, "pqr", 0, 0, 0}
-    };
+    } queue[n];
 
+    for(i = 0; i < n; i++){
+        fscanf(input, "%d %s", &queue[i].length, queue[i].contents);
+        queue[i].allocated = queue[i].start = queue[i].end = 0;
+    }
     char blocks[BLOCKS];                                       // memory blocks
     for(i = 0; i < BLOCKS; blocks[i++] = 0);                // initializing blocks to zero, to denote unallocated blocks
 
-    int links[BLOCKS];        // links between nodes
-    int current = 0;
+    int requests[BLOCKS];
+    while(!feof(input) && fscanf(input, "%d", &requests[r]))
+        r++;
+
+    printf("\n[.] Finished reading %s.\n", path);
+    fclose(input);
 
     for(i = 0; i < n; i++){
         if(current == -1)                                      // stop when free nodes are exhausted
@@ -121,8 +139,8 @@ void linkedlist(char path[]){
 
 }
 
-void indexed(char path[]){
-    int BLOCKS, i, j, k, n = 4;
+void indexed(const char * path){
+    int BLOCKS, i, j, k, n, r = 0;
 
     FILE *input = fopen(path, "r");
     if(!input){
@@ -132,18 +150,19 @@ void indexed(char path[]){
     printf("\n[.] Reading %s.\n", path);
 
     fscanf(input, "%d", &BLOCKS);
+    fscanf(input, "%d", &n);
 
     struct queue_element{                                     // queue of files waiting to be allocated
         int length;
         int index;
-        char * contents;
+        char contents[MAX_FILE_SIZE];
         int allocated;
-    } queue[MAXSIZE] = {
-            {3, 7, "abc", 0},
-            {1, 8, "x", 0},
-            {2, 3, "yz", 0},
-            {3, 4, "pqr", 0}
-    };
+    } queue[n];
+
+    for(i = 0; i < n; i++) {
+        fscanf(input, "%d %d %s", &queue[i].length, &queue[i].index, queue[i].contents);
+        queue[i].allocated = 0;
+    }
 
     char blocks[BLOCKS];                                       // memory blocks
     for(i = 0; i < BLOCKS; blocks[i++] = 0);                // initializing blocks to zero, to denote unallocated blocks
@@ -151,6 +170,13 @@ void indexed(char path[]){
 
     int index_table[BLOCKS];
     for(i = 0; i < BLOCKS; index_table[i++] = 0);
+
+    int requests[BLOCKS];
+    while(!feof(input) && fscanf(input, "%d", &requests[r]))
+        r++;
+
+    printf("\n[.] Finished reading %s.\n", path);
+    fclose(input);
 
     for(i = 0; i < n; i++) {
         if(!blocks[queue[i].index - 1] && !index_table[queue[i].index - 1]){
@@ -189,7 +215,6 @@ void indexed(char path[]){
 
 int main(int argc, char const *argv[]) {
 
-    int seq_algo = 0, ll_algo = 0, index_algo = 0;
     int i = 1;
 
     output = fopen(".\\file_alloc.txt", "a");                        // open file for writing output
@@ -216,8 +241,8 @@ int main(int argc, char const *argv[]) {
 
         printf("\n   For Linked List File Allocation Strategy,");
         printf("\n   The first line contains an integer which denotes the total number of blocks available.");
-        printf("\n   The second line contains an integer 'k' which denotes the total number of links that are present between the nodes.");
-        printf("\n   The next 'k' lines contain two space separated integers each which denotes the origin and destination nodes of each of the 'k' links.");
+        printf("\n   The second line contains an integer 'm' which denotes the total number of links that are present between the nodes.");
+        printf("\n   The next 'm' lines contain two space separated integers each which denotes the origin and destination nodes of each of the 'k' links.");
         printf("\n   The next line contains an integer 'n' which denotes the number of files that are in queue to be allotted,");
         printf("\n   followed by 'n' lines containing an integer and a string on each line, denoting the file lengths and contents. (Eg. 3 abc)");
         printf("\n   The processes whose allocation are to be displayed make up the remaining lines, with each process number occupying its own line.\n");
