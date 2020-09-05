@@ -1,3 +1,5 @@
+// Limitation: Directory names have to be unique in hierarchical directory structure
+
 #include <stdio.h>                            // for basic i/o
 #include <stdlib.h>                           // for exit()
 #include <stdint.h>                           // for uint8_t
@@ -6,6 +8,7 @@
 #define DATE "05/09/2020"
 #define childlink filelink
 #define siblinglink dirlink
+#define childcount filecount
 
 struct NODE{
     unsigned int id;                          // unique id for each file/directory in the filesystem
@@ -487,7 +490,7 @@ void two_level(const char * path){
 }
 
 void hierarchical(const char * path){
-    char permission[4], filename[20];
+    char permission[4], filename[20], folder[20];
     int i, j, choice = 1, flag = 0, last_id = 0;
 
     struct NODE filesystem[MAX_NODES];        // file system with a maximum size of MAX_NODE nodes (files and directories)
@@ -507,10 +510,10 @@ void hierarchical(const char * path){
     }
     fprintf(output, "------------------------------\n");
 
-    while (!feof(input)){
+    while (!feof(input)){                                           // read nodes from file
         fgets(filesystem[nodecount].name, sizeof(filesystem[nodecount].name), input);
         filesystem[nodecount].name[strlen(filesystem[nodecount].name) - 1] = '\0';
-        fscanf(input, "%d%*c", &filesystem[nodecount].filecount);
+        fscanf(input, "%d%*c", &filesystem[nodecount].childcount);
         fgets(filesystem[nodecount].location, sizeof(filesystem[nodecount].location), input);
         filesystem[nodecount].location[strlen(filesystem[nodecount].location) - 1] = '\0';
         fscanf(input, "%c", &filesystem[nodecount].type);
@@ -531,32 +534,296 @@ void hierarchical(const char * path){
         }
         filesystem[nodecount].id = ++last_id;
         filesystem[nodecount].dirlink = filesystem[nodecount].filelink = 0;
-        if(filesystem[nodecount].type == 'f' || filesystem[nodecount].type == 'F')
-            filesystem[nodecount - 1].filelink = filesystem[nodecount].id;
+        flag = 1;
+        for(i = nodecount - 1; i >= 0; i--){
+            if(!strcmp(filesystem[i].location, filesystem[nodecount].location)){
+                filesystem[i].siblinglink = filesystem[nodecount].id;
+                break;
+            }
+            if(filesystem[i].type == 'd' && !strcmp(filesystem[i].name, filesystem[nodecount].location)){
+                filesystem[i].childlink = filesystem[nodecount].id;
+                break;
+            }
+        }
         nodecount++;
     }
     fclose(input);
 
-    printf("\nHierarchical Directory Structure\n-----------------------------\n");
-
-
-
-
-
-
-
-
-
-
+    printf("\nHierarchical Directory Structure\n--------------------------------\n");
+    printf("1. Create a file\n2. Create a directory\n3. Search for a file\n4. Search for a directory\n5. Delete a file\n6. Delete a directory\n0. Exit\n");
+    do {
+        printf("\nEnter Option #");
+        scanf("%d", &choice);
+        if (!choice)                                                // exit the menu
+            break;
+        else if (choice == 1) {                                     // create a file
+            if (nodecount == MAX_NODES){
+                printf("Insufficient Storage Space Available.\n");
+                continue;
+            }
+            printf("Enter new filename: ");
+            scanf("%*c%[^\n]%*c", filename);
+            printf("Available Locations:");
+            for(i = 0; i < nodecount; i++)
+                if (filesystem[i].type == 'd')
+                    printf("\t%s", filesystem[i].name);
+            printf("\nEnter location to create new file: ");
+            scanf("%[^\n]%*c", folder);
+            for(j = 0; j < nodecount; j++)                                              // check whether directory exists
+                if (filesystem[j].type == 'd' && !strcmp(filesystem[j].name, folder))
+                    break;
+            if(j == nodecount){
+                printf("%s doesn't exist.\n", folder);
+                continue;
+            }
+            for(i = 0; i < nodecount; i++)                                              // check whether file already exists in the specified directory
+                if (filesystem[i].type == 'f' && !strcmp(filesystem[i].location, folder) && !strcmp(filesystem[i].name, filename))
+                    break;
+            if(i < nodecount){
+                printf("%s already exists in %s.\n", filename, folder);
+                continue;
+            }
+            filesystem[nodecount].id = ++last_id;
+            strcpy(filesystem[nodecount].name, filename);
+            filesystem[nodecount].childcount = 1;
+            filesystem[j].childcount++;                                                  // increment file count for directory
+            filesystem[nodecount].childlink = filesystem[nodecount].siblinglink = 0;
+            for(i = nodecount - 1; i >= j; i--){
+                if (!strcmp(folder, filesystem[i].location)){
+                    filesystem[i].siblinglink = filesystem[nodecount].id;
+                    break;
+                }
+                if (filesystem[i].type == 'd' && !strcmp(folder, filesystem[i].name)){
+                    filesystem[i].childlink = filesystem[nodecount].id;
+                    break;
+                }
+            }
+            strcpy(filesystem[nodecount].location, folder);
+            filesystem[nodecount].type = 'f';
+            printf("Enter filesize in KB: ");
+            scanf("%d", &filesystem[nodecount].size);
+            filesystem[j].size += filesystem[nodecount].size;                       // increment total size of directory
+            strcpy(filesystem[nodecount].created, DATE);
+            filesystem[nodecount].permissions = 0;
+            printf("Read permission? (1 for yes, 0 for no): ");
+            scanf("%d", &flag);
+            if (flag == 1) filesystem[nodecount].permissions += 4;
+            printf("Write permission? (1 for yes, 0 for no): ");
+            scanf("%d", &flag);
+            if (flag == 1) filesystem[nodecount].permissions += 2;
+            printf("Execute permission? (1 for yes, 0 for no): ");
+            scanf("%d", &flag);
+            if (flag == 1) filesystem[nodecount].permissions += 1;
+            nodecount++;
+            printf("%s created successfully.\n", filename);
+        }
+        else if (choice == 2){                                      // create a directory
+            if (nodecount == MAX_NODES){
+                printf("Insufficient Storage Space Available.\n");
+                continue;
+            }
+            printf("Enter new directory name: ");
+            scanf("%*c%[^\n]%*c", filename);
+            printf("Available Locations:\tRoot");
+            for(i = 0; i < nodecount; i++)
+                if (filesystem[i].type == 'd')
+                    printf("\t%s", filesystem[i].name);
+            printf("\nEnter location to create new file: ");
+            scanf("%[^\n]%*c", folder);
+            for(j = 0; j < nodecount; j++)                                              // check whether directory exists
+                if (filesystem[j].type == 'd' && !strcmp(filesystem[j].name, folder))
+                    break;
+            if(j == nodecount && strcmp(folder, "Root")){
+                printf("%s doesn't exist.\n", folder);
+                continue;
+            }
+            for(i = 0; i < nodecount; i++)                                              // check whether file already exists in the specified directory
+                if (filesystem[i].type == 'd' && !strcmp(filesystem[i].name, filename))
+                    break;
+            if(i < nodecount){
+                printf("%s already exists in another location.\n", filename);
+                continue;
+            }
+            filesystem[nodecount].id = ++last_id;
+            strcpy(filesystem[nodecount].name, filename);
+            filesystem[nodecount].childcount = 1;
+            if (strcmp(folder, "Root"))
+                filesystem[j].childcount++;                                                  // increment file count for directory
+            filesystem[nodecount].childlink = filesystem[nodecount].siblinglink = 0;
+            for(i = nodecount - 1; i >= j; i--){
+                if (!strcmp(folder, filesystem[i].location)){
+                    filesystem[i].siblinglink = filesystem[nodecount].id;
+                    break;
+                }
+                if (filesystem[i].type == 'd' && !strcmp(folder, filesystem[i].name)){
+                    filesystem[i].childlink = filesystem[nodecount].id;
+                    break;
+                }
+            }
+            strcpy(filesystem[nodecount].location, folder);
+            filesystem[nodecount].type = 'd';
+            filesystem[nodecount].size = 1;
+            if (strcmp(folder, "Root"))
+                filesystem[j].size += 1;                       // increment total size of directory
+            strcpy(filesystem[nodecount].created, DATE);
+            filesystem[nodecount].permissions = 0;
+            printf("Read permission? (1 for yes, 0 for no): ");
+            scanf("%d", &flag);
+            if (flag == 1) filesystem[nodecount].permissions += 4;
+            printf("Write permission? (1 for yes, 0 for no): ");
+            scanf("%d", &flag);
+            if (flag == 1) filesystem[nodecount].permissions += 2;
+            printf("Execute permission? (1 for yes, 0 for no): ");
+            scanf("%d", &flag);
+            if (flag == 1) filesystem[nodecount].permissions += 1;
+            nodecount++;
+            printf("%s created successfully.\n", filename);
+        }
+        else if (choice == 3){                                      // search for a file
+            printf("Enter filename to search: ");
+            scanf("%*c%[^\n]%*c", filename);
+            for(i = 0, flag = 0; i < nodecount; i++){
+                if(filesystem[i].type == 'f' && !strcmp(filename, filesystem[i].name)){
+                    printf("\n%s found in %s.\n", filename, filesystem[i].location);
+                    printf(" Size: %d KB\n", filesystem[i].size);
+                    printf(" Created On: %s\n", filesystem[i].created);
+                    printf(" Permissions: %s %s %s\n", filesystem[i].permissions&(1<<2)?"Read":"-", filesystem[i].permissions&(1<<1)?"Write":"-", filesystem[i].permissions&1?"Execute":"-");
+                    flag++;
+                }
+            }
+            if(flag)
+                printf("\nSearch completed. %d files found.\n", flag);
+            else
+                printf("File not found.\n");
+        }
+        else if (choice == 4){                                      // search for a directory
+            printf("Enter directory name to search: ");
+            scanf("%*c%[^\n]%*c", folder);
+            for(i = 0, flag = 0; i < nodecount; i++){
+                if(filesystem[i].type == 'd' && !strcmp(folder, filesystem[i].name)){
+                    printf("\n%s found in %s.\n", folder, filesystem[i].location);
+                    printf(" Child Count (including %s): %d\n", folder, filesystem[i].filecount);
+                    printf(" Size: %d KB\n", filesystem[i].size);
+                    printf(" Created On: %s\n", filesystem[i].created);
+                    printf(" Permissions: %s %s %s\n", filesystem[i].permissions&(1<<2)?"Read":"-", filesystem[i].permissions&(1<<1)?"Write":"-", filesystem[i].permissions&1?"Execute":"-");
+                    flag++;
+                }
+            }
+            if(flag)
+                printf("\nSearch completed. %d directory(s) found.\n", flag);
+            else
+                printf("Directory not found.\n");
+        }
+        else if (choice == 5){                                      // delete a file
+            printf("Enter filename to delete: ");
+            scanf("%*c%[^\n]%*c", filename);
+            printf("Available Directories:");
+            for(i = 0; i < nodecount; i++)
+                if (filesystem[i].type == 'd')
+                    printf("\t%s", filesystem[i].name);
+            printf("\nEnter location (directory name) of file: ");
+            scanf("%[^\n]%*c", folder);
+            for(j = 0; j < nodecount; j++)                                              // check whether directory exists
+                if (filesystem[j].type == 'd' && !strcmp(filesystem[j].name, folder))
+                    break;
+            if(j == nodecount){
+                printf("%s doesn't exist.\n", folder);
+                continue;
+            }
+            for(i = 0; i < nodecount; i++)                                              // check whether file already exists in the specified directory
+                if (filesystem[i].type == 'f' && !strcmp(filesystem[i].location, folder) && !strcmp(filesystem[i].name, filename))
+                    break;
+            if(i == nodecount){
+                printf("%s not found in %s.\n", filename, folder);
+                continue;
+            }
+            printf("File '%s' found in %s.\n", filename, folder);
+            printf(" Size: %d KB\n", filesystem[i].size);
+            printf(" Created On: %s\n", filesystem[i].created);
+            printf(" Permissions: %s %s %s\n", filesystem[i].permissions&(1<<2)?"Read":"-", filesystem[i].permissions&(1<<1)?"Write":"-", filesystem[i].permissions&1?"Execute":"-");
+            printf(" Deleted %s successfully.\n", filename);
+            filesystem[j].childcount--;
+            printf(" Remaining file count inside %s: %d\n", filesystem[j].name, filesystem[j].childcount - 1);
+            filesystem[j].size -= filesystem[i].size;
+            for (j = 0; j < i; j++) {
+                if (filesystem[j].childlink == filesystem[i].id){
+                    filesystem[j].childlink = filesystem[i].siblinglink;
+                    break;
+                }
+                if (filesystem[j].siblinglink == filesystem[i].id){
+                    filesystem[j].siblinglink = filesystem[i].siblinglink;
+                    break;
+                }
+            }
+            nodecount--;
+            for(j = i; j < nodecount; j++)                                          // delete the node (by overwriting)
+                filesystem[j] = filesystem[j+1];
+        }
+        else if (choice == 6){                                      // delete a directory
+            printf("Enter name of the directory to delete: ");
+            scanf("%*c%[^\n]%*c", filename);
+            printf("Available Locations:\tRoot");
+            for(i = 0; i < nodecount; i++)
+                if (filesystem[i].type == 'd')
+                    printf("\t%s", filesystem[i].name);
+            printf("\nEnter location of the directory to delete: ");
+            scanf("%[^\n]%*c", folder);
+            for(j = 0; j < nodecount; j++)                                              // check whether directory exists
+                if (filesystem[j].type == 'd' && !strcmp(filesystem[j].name, folder))
+                    break;
+            if(j == nodecount && strcmp(folder, "Root")){
+                printf("%s doesn't exist.\n", folder);
+                continue;
+            }
+            for(i = 0; i < nodecount; i++)                                              // check whether file already exists in the specified directory
+                if (filesystem[i].type == 'd' && !strcmp(filesystem[i].location, folder) && !strcmp(filesystem[i].name, filename))
+                    break;
+            if(i == nodecount){
+                printf("%s not found in %s.\n", filename, folder);
+                continue;
+            }
+            printf("File '%s' found in %s.\n", filename, folder);
+            printf(" Size: %d KB\n", filesystem[j].size);
+            printf(" File Count (including the directory itself): %d\n", filesystem[j].filecount);
+            printf(" Created On: %s\n", filesystem[j].created);
+            printf(" Permissions: %s %s %s\n", filesystem[j].permissions&(1<<2)?"Read":"-", filesystem[j].permissions&(1<<1)?"Write":"-", filesystem[j].permissions&1?"Execute":"-");
+            printf(" Deleted %s successfully.\n", folder);
+            if(strcmp(folder, "Root")){
+                filesystem[j].childcount--;
+                filesystem[j].size -= filesystem[i].size;
+                printf(" Remaining file count inside %s: %d\n", filesystem[j].name, filesystem[j].childcount - 1);
+            }
+            for (j = 0; j < i; j++) {
+                if (filesystem[j].childlink == filesystem[i].id){
+                    filesystem[j].childlink = filesystem[i].siblinglink;
+                    break;
+                }
+                if (filesystem[j].siblinglink == filesystem[i].id){
+                    filesystem[j].siblinglink = filesystem[i].siblinglink;
+                    break;
+                }
+            }
+            for(i = 0; i < nodecount; i++){
+                if(!strcmp(filesystem[i].location, filename) || (!strcmp(filesystem[i].name, filename) && filesystem[i].type == 'd')) {
+                    for (j = i--; j < nodecount - 1; j++)
+                        filesystem[j] = filesystem[j + 1];
+                    nodecount--;
+                }
+            }
+        }
+        else{
+            printf("Invalid Option.\n");
+        }
+    } while (1);
 
     for(i = 0; i < nodecount; i++){
         fprintf(output, " ID #%d\n", filesystem[i].id);
         fprintf(output, " Name: %s\n", filesystem[i].name);
-        fprintf(output, " File Count: %d\n", filesystem[i].filecount);
-        if(filesystem[i].filelink)
-            fprintf(output, " File Link: ID #%d\n", filesystem[i].filelink);
-        if(filesystem[i].dirlink)
-            fprintf(output, " Directory Link: ID #%d\n", filesystem[i].dirlink);
+        fprintf(output, " Children Count: %d\n", filesystem[i].childcount);
+        if(filesystem[i].childlink)
+            fprintf(output, " Child Link: ID #%d\n", filesystem[i].childlink);
+        if(filesystem[i].siblinglink)
+            fprintf(output, " Sibling Link: ID #%d\n", filesystem[i].siblinglink);
         fprintf(output, " Location: %s\n", filesystem[i].location);
         fprintf(output, " Type: %s\n", filesystem[i].type=='f'?"File":"Directory");
         fprintf(output, " Size: %d KB\n", filesystem[i].size);
