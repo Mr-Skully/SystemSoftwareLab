@@ -4,6 +4,8 @@
 #include <string.h>                           // for strcmp()
 #define MAX_NODES 10                          // maximum no. of nodes in the filesystem
 #define DATE "05/09/2020"
+#define childlink filelink
+#define siblinglink dirlink
 
 struct NODE{
     unsigned int id;                          // unique id for each file/directory in the filesystem
@@ -17,7 +19,6 @@ struct NODE{
     char created[11];                         // date of creation
     uint8_t permissions;                      // permissions expressed as a sum of integer values of the allowed permissions (4 - read, 2 - write, 1 - execute)
 };
-
 
 void single_level(const char * path){         // use single level directory structure
     char permission[4], filename[20];                       // to temporarily read permissions in string format before converting to int
@@ -49,12 +50,12 @@ void single_level(const char * path){         // use single level directory stru
         fscanf(input, "%c", &filesystem[nodecount].type);
         fscanf(input, "%d", &filesystem[nodecount].size);
         fscanf(input, "%s", filesystem[nodecount].created);
-        fscanf(input, "%s%*c", permission);                                             // read permissions as a string (like 'rwx') and individually update the permissions inside the node 
+        fscanf(input, "%s%*c", permission);                                             // read permissions as a string (like 'rwx') and individually update the permissions inside the node
         filesystem[nodecount].permissions = 0;
         for (i = 0; i < 3 && permission[i]!='\0'; i++) {
             switch (permission[i]) {
                 case 'r':   filesystem[nodecount].permissions |= (1 << 2);              // read permission
-                            break;  
+                            break;
                 case 'w':   filesystem[nodecount].permissions |= (1 << 1);              // write permission
                             break;
                 case 'x':   filesystem[nodecount].permissions |= (1 << 0);              // execute permission
@@ -196,7 +197,7 @@ void two_level(const char * path){
     }
     fprintf(output, "------------------------------\n");
 
-    while (!feof(input)){
+    while (!feof(input)){                                           // read nodes from file
         fgets(filesystem[nodecount].name, sizeof(filesystem[nodecount].name), input);
         filesystem[nodecount].name[strlen(filesystem[nodecount].name) - 1] = '\0';
         fscanf(input, "%d%*c", &filesystem[nodecount].filecount);
@@ -220,14 +221,36 @@ void two_level(const char * path){
         }
         filesystem[nodecount].id = ++last_id;
         filesystem[nodecount].dirlink = filesystem[nodecount].filelink = 0;
-        if(filesystem[nodecount].type == 'f' || filesystem[nodecount].type == 'F')
-            filesystem[nodecount - 1].filelink = filesystem[nodecount].id;
+        for(i = nodecount - 1; filesystem[nodecount].type == 'f' && i >= 0; i--){
+            if (filesystem[i].type == 'f' && !strcmp(filesystem[nodecount].location, filesystem[i].location)){
+                filesystem[i].filelink = filesystem[nodecount].id;
+                break;
+            }
+            if (filesystem[i].type == 'd' && !strcmp(filesystem[nodecount].location, filesystem[i].name)){
+                filesystem[i].filelink = filesystem[nodecount].id;
+                break;
+            }
+        }
+        for(i = nodecount - 1; filesystem[nodecount].type == 'd' && i >= 0; i--){
+            if (filesystem[i].type == 'd'){
+                filesystem[i].dirlink = filesystem[nodecount].id;
+                break;
+            }
+        }
         nodecount++;
     }
     fclose(input);
 
-    printf("\nTwo Level Directory Structure\n-----------------------------\n");
-
+//    printf("\nTwo Level Directory Structure\n-----------------------------\n");
+//    printf("1. Create a file\n2. Search for a file\n3. Delete a file\n0. Exit\n");
+//    do {
+//        printf("\nEnter Option #");
+//        scanf("%d", &choice);
+//        if (!choice)                                                 // exit the menu
+//            break;
+//        else if (choice == 1) {                                       // create a file in the directory
+//        }
+//    } while (1);
 
 
 
