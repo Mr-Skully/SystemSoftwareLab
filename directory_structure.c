@@ -485,8 +485,8 @@ void two_level(const char * path){
 }
 
 void hierarchical(const char * path){
-    char permission[4], filename[20], folder[20];
-    int i, j, choice = 1, flag = 0, last_id = 0;
+    char permission[4], filename[20], folder[20], loc[20];
+    int i, j, k, choice = 1, flag = 0, last_id = 0;
 
     struct NODE filesystem[MAX_NODES];        // file system with a maximum size of MAX_NODE nodes (files and directories)
     int nodecount = 0;                        // total no. of nodes currently in the filesystem
@@ -581,8 +581,24 @@ void hierarchical(const char * path){
             filesystem[nodecount].id = ++last_id;                                       // continue creating the new file
             strcpy(filesystem[nodecount].name, filename);
             filesystem[nodecount].childcount = 1;
-            filesystem[j].childcount++;                                                  // increment file count for directory
             filesystem[nodecount].childlink = filesystem[nodecount].siblinglink = 0;
+            printf("Enter filesize in KB: ");
+            scanf("%d", &filesystem[nodecount].size);
+
+            strcpy(loc, folder);
+            while (1){                                                                  // increment attributes of parents
+                for(k = 0; k < nodecount; k++)
+                    if (!(strcmp(filesystem[k].name, loc)))
+                        break;
+                if(k == nodecount)
+                    break;
+                else{
+                    filesystem[k].size += filesystem[nodecount].size;                   // increment total size of directory
+                    filesystem[k].childcount += filesystem[nodecount].childcount;       // increment file count for directory
+                    strcpy(loc, filesystem[k].location);
+                }
+            }
+
             for(i = nodecount - 1; i >= j; i--){                                        // assign child or sibling links
                 if (!strcmp(folder, filesystem[i].location)){
                     filesystem[i].siblinglink = filesystem[nodecount].id;
@@ -595,9 +611,6 @@ void hierarchical(const char * path){
             }
             strcpy(filesystem[nodecount].location, folder);
             filesystem[nodecount].type = 'f';
-            printf("Enter filesize in KB: ");
-            scanf("%d", &filesystem[nodecount].size);
-            filesystem[j].size += filesystem[nodecount].size;                       // increment total size of directory
             strcpy(filesystem[nodecount].created, DATE);
             filesystem[nodecount].permissions = 0;
             printf("Read permission? (1 for yes, 0 for no): ");
@@ -642,9 +655,23 @@ void hierarchical(const char * path){
             filesystem[nodecount].id = ++last_id;
             strcpy(filesystem[nodecount].name, filename);
             filesystem[nodecount].childcount = 1;
-            if (strcmp(folder, "Root"))                                                 // the location is compared with 'root' separately as root is not a defined directory
-                filesystem[j].childcount++;                                                  // increment file count for directory
+            filesystem[nodecount].size = 1;
             filesystem[nodecount].childlink = filesystem[nodecount].siblinglink = 0;
+
+            strcpy(loc, folder);
+            while (1){                                                                  // increment attributes of parents
+                for(k = 0; k < nodecount; k++)
+                    if (!(strcmp(filesystem[k].name, loc)))
+                        break;
+                if(k == nodecount)
+                    break;
+                else{
+                    filesystem[k].size += filesystem[nodecount].size;                   // increment total size of directory
+                    filesystem[k].childcount += filesystem[nodecount].childcount;       // increment file count for directory
+                    strcpy(loc, filesystem[k].location);
+                }
+            }
+
             for(i = nodecount - 1; i >= 0; i--){
                 if (!strcmp(folder, filesystem[i].location)){
                     filesystem[i].siblinglink = filesystem[nodecount].id;
@@ -657,9 +684,6 @@ void hierarchical(const char * path){
             }
             strcpy(filesystem[nodecount].location, folder);
             filesystem[nodecount].type = 'd';
-            filesystem[nodecount].size = 1;
-            if (strcmp(folder, "Root"))
-                filesystem[j].size += 1;                       // increment total size of directory
             strcpy(filesystem[nodecount].created, DATE);
             filesystem[nodecount].permissions = 0;
             printf("Read permission? (1 for yes, 0 for no): ");
@@ -737,9 +761,23 @@ void hierarchical(const char * path){
             printf(" Created On: %s\n", filesystem[i].created);
             printf(" Permissions: %s %s %s\n", filesystem[i].permissions&(1<<2)?"Read":"-", filesystem[i].permissions&(1<<1)?"Write":"-", filesystem[i].permissions&1?"Execute":"-");
             printf(" Deleted %s successfully.\n", filename);
-            filesystem[j].childcount--;                                                 // decrement child count of parent
+
+            strcpy(loc, folder);
+            while (1){                                                                  // decrement attributes of parents
+                for(k = 0; k < nodecount; k++)
+                    if (!(strcmp(filesystem[k].name, loc)))
+                        break;
+                if(k == nodecount)
+                    break;
+                else{
+                    filesystem[k].size -= filesystem[i].size;                   // decrement total size of directory
+                    filesystem[k].childcount--;       // decrement file count for directory
+                    strcpy(loc, filesystem[k].location);
+                }
+            }
+
             printf(" Remaining file count inside %s: %d\n", filesystem[j].name, filesystem[j].childcount - 1);
-            filesystem[j].size -= filesystem[i].size;                                   // decrement parent size
+
             for (j = 0; j < i; j++) {                                                   // reassign links
                 if (filesystem[j].childlink == filesystem[i].id){
                     filesystem[j].childlink = filesystem[i].siblinglink;
@@ -783,9 +821,22 @@ void hierarchical(const char * path){
             printf(" Created On: %s\n", filesystem[i].created);
             printf(" Permissions: %s %s %s\n", filesystem[i].permissions&(1<<2)?"Read":"-", filesystem[i].permissions&(1<<1)?"Write":"-", filesystem[i].permissions&1?"Execute":"-");
             printf(" Deleted %s successfully.\n", folder);
+
+            strcpy(loc, folder);
+            while (1){                                                                  // decrement attributes of parents
+                for(k = 0; k < nodecount; k++)
+                    if (!(strcmp(filesystem[k].name, loc)))
+                        break;
+                if(k == nodecount)
+                    break;
+                else{
+                    filesystem[k].size -= filesystem[i].size;                   // decrement total size of directory
+                    filesystem[k].childcount -= filesystem[i].childcount;       // decrement file count for directory
+                    strcpy(loc, filesystem[k].location);
+                }
+            }
+
             if(strcmp(folder, "Root")){                                                 // the location is compared with 'root' separately as root is not a defined directory
-                filesystem[j].childcount--;
-                filesystem[j].size -= filesystem[i].size;
                 printf(" Remaining file count inside %s: %d\n", filesystem[j].name, filesystem[j].childcount - 1);
             }
             for (j = 0; j < i; j++) {                                                   // reassign links
