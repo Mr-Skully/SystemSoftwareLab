@@ -33,70 +33,70 @@ void single_level(const char * path){         // use single level directory stru
     }
     printf("\n[.] Reading %s.\n", path);
 
-    FILE *output = fopen(".\\single_level_output.txt", "w");                        // open file for writing output
+    FILE *output = fopen(".\\single_level_output.txt", "w");                            // open file for writing output
     if(!output){
         printf("\n[.] Could not open output file.\n");
         exit(1);
     }
     fprintf(output, "------------------------------\n");
 
-    while (!feof(input)){
+    while (!feof(input)){                                                               // reading input from file and storing it in the filesystem
         fgets(filesystem[nodecount].name, sizeof(filesystem[nodecount].name), input);
-        filesystem[nodecount].name[strlen(filesystem[nodecount].name) - 1] = '\0';
+        filesystem[nodecount].name[strlen(filesystem[nodecount].name) - 1] = '\0';      // fgets() reads the newline character also into the string variable
         fscanf(input, "%d%*c", &filesystem[nodecount].filecount);
         fgets(filesystem[nodecount].location, sizeof(filesystem[nodecount].location), input);
         filesystem[nodecount].location[strlen(filesystem[nodecount].location) - 1] = '\0';
         fscanf(input, "%c", &filesystem[nodecount].type);
         fscanf(input, "%d", &filesystem[nodecount].size);
         fscanf(input, "%s", filesystem[nodecount].created);
-        fscanf(input, "%s%*c", permission);
+        fscanf(input, "%s%*c", permission);                                             // read permissions as a string (like 'rwx') and individually update the permissions inside the node 
         filesystem[nodecount].permissions = 0;
         for (i = 0; i < 3 && permission[i]!='\0'; i++) {
             switch (permission[i]) {
-                case 'r':   filesystem[nodecount].permissions |= (1 << 2);
+                case 'r':   filesystem[nodecount].permissions |= (1 << 2);              // read permission
+                            break;  
+                case 'w':   filesystem[nodecount].permissions |= (1 << 1);              // write permission
                             break;
-                case 'w':   filesystem[nodecount].permissions |= (1 << 1);
-                            break;
-                case 'x':   filesystem[nodecount].permissions |= (1 << 0);
+                case 'x':   filesystem[nodecount].permissions |= (1 << 0);              // execute permission
                             break;
                 default:    break;
             }
         }
-        filesystem[nodecount].id = ++last_id;
-        filesystem[nodecount].dirlink = filesystem[nodecount].filelink = 0;
-        if(filesystem[nodecount].type == 'f' || filesystem[nodecount].type == 'F')
+        filesystem[nodecount].id = ++last_id;                                           // assign a new unique id to the node
+        filesystem[nodecount].dirlink = filesystem[nodecount].filelink = 0;             // assuming this the last node in the chain for now
+        if(filesystem[nodecount].type == 'f' || filesystem[nodecount].type == 'F')      // files are referenced in directory's file link, or in the file link of other files in the directory.
             filesystem[nodecount - 1].filelink = filesystem[nodecount].id;
         nodecount++;
     }
     fclose(input);
-    
-    printf("\nSingle Level Directory Structure\n--------------------------------\n");
+
+    printf("\nSingle Level Directory Structure\n--------------------------------\n");   // menu
     printf("1. Create a file\n2. Search for a file\n3. Delete a file\n0. Exit\n");
     do {
         printf("\nEnter Option #");
         scanf("%d", &choice);
-        if(!choice)
+        if(!choice)                                                 // exit the menu
             break;
-        else if(choice == 1){                                       // create a file
-            if(nodecount == MAX_NODES){
+        else if(choice == 1){                                       // create a file in the directory
+            if(nodecount == MAX_NODES){                                                 // storage full
                 printf("Insufficient Storage Space.\n");
                 continue;
             }
             printf("Enter new filename: ");
-            scanf("%*c%[^\n]%*c", filename);
+            scanf("%*c%[^\n]%*c", filename);                                            // alternative for gets() that removes the trailing newline from the buffer
             for(i = 1; i < nodecount && strcmp(filename, filesystem[i].name); i++);
-            if (i == nodecount){
+            if (i == nodecount){                                                        // file doesn't already exist
                 filesystem[nodecount].id = ++last_id;
                 strcpy(filesystem[nodecount].name, filename);
                 filesystem[nodecount].filecount = 1;
-                filesystem[0].filecount++;
+                filesystem[0].filecount++;                                              // increment file count for directory
                 filesystem[nodecount].filelink = filesystem[nodecount].dirlink = 0;
                 filesystem[nodecount - 1].filelink = filesystem[nodecount].id;
                 strcpy(filesystem[nodecount].location, filesystem[0].name);
                 filesystem[nodecount].type = 'f';
                 printf("Enter filesize in KB: ");
                 scanf("%d", &filesystem[nodecount].size);
-                filesystem[0].size += filesystem[nodecount].size;
+                filesystem[0].size += filesystem[nodecount].size;                       // increment total size of directory
                 strcpy(filesystem[nodecount].created, DATE);
                 filesystem[nodecount].permissions = 0;
                 printf("Read permission? (1 for yes, 0 for no): ");
@@ -111,52 +111,52 @@ void single_level(const char * path){         // use single level directory stru
                 nodecount++;
                 printf("%s created successfully.\n", filename);
             }
-            else{
+            else{                                                                       // file already exists
                 printf("%s already exists.\n", filename);
             }
         }
-        else if(choice == 2){                                       // search for a file
+        else if(choice == 2){                                       // search for a file in the directory
             printf("Enter filename to search: ");
             scanf("%*c%[^\n]%*c", filename);
             for(i = 1; i < nodecount && strcmp(filename, filesystem[i].name); i++);
-            if(i == nodecount)
+            if(i == nodecount)                                                          // file doesn't exist
                 printf("File not found in the %s.\n", filesystem[0].name);
-            else{
+            else{                                                                       // file exists
                 printf("%s found in %s.\n", filename, filesystem[0].name);
                 printf(" Size: %d KB\n", filesystem[i].size);
                 printf(" Created On: %s\n", filesystem[i].created);
                 printf(" Permissions: %s %s %s\n", filesystem[i].permissions&(1<<2)?"Read":"-", filesystem[i].permissions&(1<<1)?"Write":"-", filesystem[i].permissions&1?"Execute":"-");
             }
         }
-        else if(choice == 3){                                       // delete a file
+        else if(choice == 3){                                       // delete a file in the directory
             printf("Enter filename to delete: ");
             scanf("%*c%[^\n]%*c", filename);
             for(i = 1; i < nodecount && strcmp(filename, filesystem[i].name); i++);
-            if(i == nodecount)
+            if(i == nodecount)                                                          // file doesn't exist
                 printf("%s not found in the %s.\n", filename, filesystem[0].name);
-            else{
+            else{                                                                       // file exists
                 printf("File '%s' found in %s.\n", filename, filesystem[i].location);
                 printf(" Size: %d KB\n", filesystem[i].size);
                 printf(" Created On: %s\n", filesystem[i].created);
                 printf(" Permissions: %s %s %s\n", filesystem[i].permissions&(1<<2)?"Read":"-", filesystem[i].permissions&(1<<1)?"Write":"-", filesystem[i].permissions&1?"Execute":"-");
                 printf(" Deleted %s successfully.\n", filename);
-                filesystem[0].filecount--;
+                filesystem[0].filecount--;                                              // decrement total file count for directory
                 printf(" Remaining file count: %d\n", filesystem[0].filecount - 1);
-                filesystem[0].size -= filesystem[i].size;
-                if(i == nodecount - 1)
+                filesystem[0].size -= filesystem[i].size;                               // decrement total size of directory
+                if(i == nodecount - 1)                                                  // if this is the last node, set the file link of the previous file/folder to NULL
                     filesystem[i-1].filelink = 0;
-                else
+                else                                                                    // else, set the file link of the previous file/folder to the ID of the next node
                     filesystem[i-1].filelink = filesystem[i+1].id;
                 nodecount--;
-                for(j = i; j < nodecount; j++)
+                for(j = i; j < nodecount; j++)                                          // delete the node (by overwriting)
                     filesystem[j] = filesystem[j+1];
             }
         }
-        else
+        else                                                        // invalid menu option
             printf("Invalid Option.\n");
     } while (1);
 
-    for(i = 0; i < nodecount; i++){
+    for(i = 0; i < nodecount; i++){                                 // write the state of the filesystem to file
         fprintf(output, " ID #%d\n", filesystem[i].id);
         fprintf(output, " Name: %s\n", filesystem[i].name);
         fprintf(output, " File Count: %d\n", filesystem[i].filecount);
