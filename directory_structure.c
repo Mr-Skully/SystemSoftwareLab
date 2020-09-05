@@ -6,9 +6,9 @@
 #include <string.h>                           // for strcmp()
 #define MAX_NODES 10                          // maximum no. of nodes in the filesystem
 #define DATE "05/09/2020"
-#define childlink filelink
-#define siblinglink dirlink
-#define childcount filecount
+#define childlink filelink                    // for hierarchical directory structure
+#define siblinglink dirlink                   // for hierarchical directory structure
+#define childcount filecount                  // for hierarchical directory structure
 
 struct NODE{
     unsigned int id;                          // unique id for each file/directory in the filesystem
@@ -202,7 +202,7 @@ void two_level(const char * path){
 
     while (!feof(input)){                                           // read nodes from file
         fgets(filesystem[nodecount].name, sizeof(filesystem[nodecount].name), input);
-        filesystem[nodecount].name[strlen(filesystem[nodecount].name) - 1] = '\0';
+        filesystem[nodecount].name[strlen(filesystem[nodecount].name) - 1] = '\0';      // fgets() stores the trailing newline
         fscanf(input, "%d%*c", &filesystem[nodecount].filecount);
         fgets(filesystem[nodecount].location, sizeof(filesystem[nodecount].location), input);
         filesystem[nodecount].location[strlen(filesystem[nodecount].location) - 1] = '\0';
@@ -224,7 +224,7 @@ void two_level(const char * path){
         }
         filesystem[nodecount].id = ++last_id;
         filesystem[nodecount].dirlink = filesystem[nodecount].filelink = 0;
-        for(i = nodecount - 1; filesystem[nodecount].type == 'f' && i >= 0; i--){
+        for(i = nodecount - 1; filesystem[nodecount].type == 'f' && i >= 0; i--){       // assigning file links
             if (filesystem[i].type == 'f' && !strcmp(filesystem[nodecount].location, filesystem[i].location)){
                 filesystem[i].filelink = filesystem[nodecount].id;
                 break;
@@ -234,7 +234,7 @@ void two_level(const char * path){
                 break;
             }
         }
-        for(i = nodecount - 1; filesystem[nodecount].type == 'd' && i >= 0; i--){
+        for(i = nodecount - 1; filesystem[nodecount].type == 'd' && i >= 0; i--){       // assigning directory links
             if (filesystem[i].type == 'd'){
                 filesystem[i].dirlink = filesystem[nodecount].id;
                 break;
@@ -244,7 +244,7 @@ void two_level(const char * path){
     }
     fclose(input);
 
-    printf("\nTwo Level Directory Structure\n-----------------------------\n");
+    printf("\nTwo Level Directory Structure\n-----------------------------\n");         // menu
     printf("1. Create a file\n2. Create a directory\n3. Search for a file\n4. Search for a directory\n5. Delete a file\n6. Delete a directory\n0. Exit\n");
     do {
         printf("\nEnter Option #");
@@ -259,11 +259,11 @@ void two_level(const char * path){
             printf("Enter new filename: ");
             scanf("%*c%[^\n]%*c", filename);
             printf("Available Directories:");
-            for(i = 0; i < nodecount; i++)
+            for(i = 0; i < nodecount; i++)                          // list available directories
                 if (filesystem[i].type == 'd')
                     printf("\t%s", filesystem[i].name);
             printf("\nEnter location (directory name): ");
-            scanf("%[^\n]%*c", folder);
+            scanf("%[^\n]%*c", folder);                             // substitute for gets()
             for(j = 0; j < nodecount; j++)                                              // check whether directory exists
                 if (filesystem[j].type == 'd' && !strcmp(filesystem[j].name, folder))
                     break;
@@ -278,7 +278,7 @@ void two_level(const char * path){
                 printf("%s already exists in %s.\n", filename, folder);
                 continue;
             }
-            filesystem[nodecount].id = ++last_id;
+            filesystem[nodecount].id = ++last_id;                                       // continues with file creation
             strcpy(filesystem[nodecount].name, filename);
             filesystem[nodecount].filecount = 1;
             filesystem[j].filecount++;                                                  // increment file count for directory
@@ -336,7 +336,7 @@ void two_level(const char * path){
                     break;
                 }
             }
-            strcpy(filesystem[nodecount].location, "Root");
+            strcpy(filesystem[nodecount].location, "Root");                             // directories can only be created at the root
             filesystem[nodecount].type = 'd';
             filesystem[nodecount].size = 1;
             strcpy(filesystem[nodecount].created, DATE);
@@ -356,7 +356,7 @@ void two_level(const char * path){
         else if (choice == 3){                                      // search for a file
             printf("Enter filename to search: ");
             scanf("%*c%[^\n]%*c", filename);
-            for(i = 0, flag = 0; i < nodecount; i++){
+            for(i = 0, flag = 0; i < nodecount; i++){               // scan all nodes for the search term
                 if(filesystem[i].type == 'f' && !strcmp(filename, filesystem[i].name)){
                     printf("\n%s found in %s.\n", filename, filesystem[i].location);
                     printf(" Size: %d KB\n", filesystem[i].size);
@@ -367,13 +367,13 @@ void two_level(const char * path){
             }
             if(flag)
                 printf("\nSearch completed. %d files found.\n", flag);
-            else
+            else                                                    // if no matches found
                 printf("File not found.\n");
         }
         else if (choice == 4){                                      // search for a directory
             printf("Enter directory to search: ");
             scanf("%*c%[^\n]%*c", folder);
-            for(i = 0; i < nodecount; i++){
+            for(i = 0; i < nodecount; i++){                         // scan nodes for search term
                 if(filesystem[i].type == 'd' && !strcmp(folder, filesystem[i].name)){
                     printf("%s found.\n", folder);
                     printf(" File Count: %d\n", filesystem[i].filecount);
@@ -383,7 +383,7 @@ void two_level(const char * path){
                     break;
                 }
             }
-            if (i == nodecount)
+            if (i == nodecount)                                     // if no match found
                 printf("Directory not found.\n");
         }
         else if (choice == 5){                                      // delete a file
@@ -402,7 +402,7 @@ void two_level(const char * path){
                 printf("%s doesn't exist.\n", folder);
                 continue;
             }
-            for(i = 0; i < nodecount; i++)                                              // check whether file already exists in the specified directory
+            for(i = 0; i < nodecount; i++)                                              // check whether file exists in the specified directory
                 if (filesystem[i].type == 'f' && !strcmp(filesystem[i].location, folder) && !strcmp(filesystem[i].name, filename))
                     break;
             if(i == nodecount){
@@ -414,10 +414,10 @@ void two_level(const char * path){
             printf(" Created On: %s\n", filesystem[i].created);
             printf(" Permissions: %s %s %s\n", filesystem[i].permissions&(1<<2)?"Read":"-", filesystem[i].permissions&(1<<1)?"Write":"-", filesystem[i].permissions&1?"Execute":"-");
             printf(" Deleted %s successfully.\n", filename);
-            filesystem[j].filecount--;
+            filesystem[j].filecount--;                                                  // decrement count in parent dir
             printf(" Remaining file count inside %s: %d\n", filesystem[j].name, filesystem[j].filecount - 1);
-            filesystem[j].size -= filesystem[i].size;
-            for (j = 0; j < i; j++) {
+            filesystem[j].size -= filesystem[i].size;                                   // decrement size of parent dir
+            for (j = 0; j < i; j++) {                                                   // reassign file links referencing this file
                 if (filesystem[j].filelink == filesystem[i].id){
                     filesystem[j].filelink = filesystem[i].filelink;
                     break;
@@ -446,13 +446,13 @@ void two_level(const char * path){
             printf(" Created On: %s\n", filesystem[j].created);
             printf(" Permissions: %s %s %s\n", filesystem[j].permissions&(1<<2)?"Read":"-", filesystem[j].permissions&(1<<1)?"Write":"-", filesystem[j].permissions&1?"Execute":"-");
             printf(" Deleted %s successfully.\n", folder);
-            for(i = 0; i < j; i++){
+            for(i = 0; i < j; i++){                                                     // reassign directory links referencing this directory
                 if (filesystem[i].dirlink == filesystem[j].id){
                     filesystem[i].dirlink = filesystem[j].dirlink;
                     break;
                 }
             }
-            for(i = 0; i < nodecount; i++){
+            for(i = 0; i < nodecount; i++){                                             // delete directory and the files contained in it by overwriting
                 if(!strcmp(filesystem[i].location, folder) || (!strcmp(filesystem[i].name, folder) && filesystem[i].type == 'd')) {
                     for (j = i--; j < nodecount - 1; j++)
                         filesystem[j] = filesystem[j + 1];
@@ -465,12 +465,7 @@ void two_level(const char * path){
         }
     } while (1);
 
-
-
-
-
-
-    for(i = 0; i < nodecount; i++){
+    for(i = 0; i < nodecount; i++){                                                     // write output to file
         fprintf(output, " ID #%d\n", filesystem[i].id);
         fprintf(output, " Name: %s\n", filesystem[i].name);
         fprintf(output, " File Count: %d\n", filesystem[i].filecount);
@@ -535,7 +530,7 @@ void hierarchical(const char * path){
         filesystem[nodecount].id = ++last_id;
         filesystem[nodecount].dirlink = filesystem[nodecount].filelink = 0;
         flag = 1;
-        for(i = nodecount - 1; i >= 0; i--){
+        for(i = nodecount - 1; i >= 0; i--){                                            // assigning child and sibling links to files and directories
             if(!strcmp(filesystem[i].location, filesystem[nodecount].location)){
                 filesystem[i].siblinglink = filesystem[nodecount].id;
                 break;
@@ -549,7 +544,7 @@ void hierarchical(const char * path){
     }
     fclose(input);
 
-    printf("\nHierarchical Directory Structure\n--------------------------------\n");
+    printf("\nHierarchical Directory Structure\n--------------------------------\n");               // menu
     printf("1. Create a file\n2. Create a directory\n3. Search for a file\n4. Search for a directory\n5. Delete a file\n6. Delete a directory\n0. Exit\n");
     do {
         printf("\nEnter Option #");
@@ -563,9 +558,9 @@ void hierarchical(const char * path){
             }
             printf("Enter new filename: ");
             scanf("%*c%[^\n]%*c", filename);
-            printf("Available Locations:");
+            printf("Available Locations:");                                             // list directories
             for(i = 0; i < nodecount; i++)
-                if (filesystem[i].type == 'd')
+                if(filesystem[i].type == 'd')
                     printf("\t%s", filesystem[i].name);
             printf("\nEnter location to create new file: ");
             scanf("%[^\n]%*c", folder);
@@ -583,12 +578,12 @@ void hierarchical(const char * path){
                 printf("%s already exists in %s.\n", filename, folder);
                 continue;
             }
-            filesystem[nodecount].id = ++last_id;
+            filesystem[nodecount].id = ++last_id;                                       // continue creating the new file
             strcpy(filesystem[nodecount].name, filename);
             filesystem[nodecount].childcount = 1;
             filesystem[j].childcount++;                                                  // increment file count for directory
             filesystem[nodecount].childlink = filesystem[nodecount].siblinglink = 0;
-            for(i = nodecount - 1; i >= j; i--){
+            for(i = nodecount - 1; i >= j; i--){                                        // assign child or sibling links
                 if (!strcmp(folder, filesystem[i].location)){
                     filesystem[i].siblinglink = filesystem[nodecount].id;
                     break;
@@ -624,7 +619,7 @@ void hierarchical(const char * path){
             }
             printf("Enter new directory name: ");
             scanf("%*c%[^\n]%*c", filename);
-            printf("Available Locations:\tRoot");
+            printf("Available Locations:\tRoot");                   // root is also a possible location while creating a directory
             for(i = 0; i < nodecount; i++)
                 if (filesystem[i].type == 'd')
                     printf("\t%s", filesystem[i].name);
@@ -633,21 +628,21 @@ void hierarchical(const char * path){
             for(j = 0; j < nodecount; j++)                                              // check whether directory exists
                 if (filesystem[j].type == 'd' && !strcmp(filesystem[j].name, folder))
                     break;
-            if(j == nodecount && strcmp(folder, "Root")){
+            if(j == nodecount && strcmp(folder, "Root")){                               // the location is compared with 'root' separately as root is not a defined directory
                 printf("%s doesn't exist.\n", folder);
                 continue;
             }
-            for(i = 0; i < nodecount; i++)                                              // check whether file already exists in the specified directory
+            for(i = 0; i < nodecount; i++)                                              // check whether folder already exists in the specified directory
                 if (filesystem[i].type == 'd' && !strcmp(filesystem[i].name, filename))
                     break;
-            if(i < nodecount){
+            if(i < nodecount){                                                          // directories have to be unique in the whole filesystem even if they are in different directories themselves
                 printf("%s already exists in another location.\n", filename);
                 continue;
             }
             filesystem[nodecount].id = ++last_id;
             strcpy(filesystem[nodecount].name, filename);
             filesystem[nodecount].childcount = 1;
-            if (strcmp(folder, "Root"))
+            if (strcmp(folder, "Root"))                                                 // the location is compared with 'root' separately as root is not a defined directory
                 filesystem[j].childcount++;                                                  // increment file count for directory
             filesystem[nodecount].childlink = filesystem[nodecount].siblinglink = 0;
             for(i = nodecount - 1; i >= 0; i--){
@@ -693,7 +688,7 @@ void hierarchical(const char * path){
             }
             if(flag)
                 printf("\nSearch completed. %d files found.\n", flag);
-            else
+            else                                                                        // when no files are found
                 printf("File not found.\n");
         }
         else if (choice == 4){                                      // search for a directory
@@ -711,7 +706,7 @@ void hierarchical(const char * path){
             }
             if(flag)
                 printf("\nSearch completed. %d directory(s) found.\n", flag);
-            else
+            else                                                                        // when no directories are found
                 printf("Directory not found.\n");
         }
         else if (choice == 5){                                      // delete a file
@@ -730,10 +725,10 @@ void hierarchical(const char * path){
                 printf("%s doesn't exist.\n", folder);
                 continue;
             }
-            for(i = 0; i < nodecount; i++)                                              // check whether file already exists in the specified directory
+            for(i = 0; i < nodecount; i++)                                              // check whether file exists in the specified directory
                 if (filesystem[i].type == 'f' && !strcmp(filesystem[i].location, folder) && !strcmp(filesystem[i].name, filename))
                     break;
-            if(i == nodecount){
+            if(i == nodecount){                                                         // if file does not exist in the specified directory
                 printf("%s not found in %s.\n", filename, folder);
                 continue;
             }
@@ -742,10 +737,10 @@ void hierarchical(const char * path){
             printf(" Created On: %s\n", filesystem[i].created);
             printf(" Permissions: %s %s %s\n", filesystem[i].permissions&(1<<2)?"Read":"-", filesystem[i].permissions&(1<<1)?"Write":"-", filesystem[i].permissions&1?"Execute":"-");
             printf(" Deleted %s successfully.\n", filename);
-            filesystem[j].childcount--;
+            filesystem[j].childcount--;                                                 // decrement child count of parent
             printf(" Remaining file count inside %s: %d\n", filesystem[j].name, filesystem[j].childcount - 1);
-            filesystem[j].size -= filesystem[i].size;
-            for (j = 0; j < i; j++) {
+            filesystem[j].size -= filesystem[i].size;                                   // decrement parent size
+            for (j = 0; j < i; j++) {                                                   // reassign links
                 if (filesystem[j].childlink == filesystem[i].id){
                     filesystem[j].childlink = filesystem[i].siblinglink;
                     break;
@@ -762,38 +757,38 @@ void hierarchical(const char * path){
         else if (choice == 6){                                      // delete a directory
             printf("Enter name of the directory to delete: ");
             scanf("%*c%[^\n]%*c", filename);
-            printf("Available Locations:\tRoot");
+            printf("Available Locations:\tRoot");                   // root is also a possible location for the directory
             for(i = 0; i < nodecount; i++)
                 if (filesystem[i].type == 'd')
                     printf("\t%s", filesystem[i].name);
             printf("\nEnter location of the directory to delete: ");
             scanf("%[^\n]%*c", folder);
-            for(j = 0; j < nodecount; j++)                                              // check whether directory exists
+            for(j = 0; j < nodecount; j++)                                              // check whether location exists
                 if (filesystem[j].type == 'd' && !strcmp(filesystem[j].name, folder))
                     break;
             if(j == nodecount && strcmp(folder, "Root")){
                 printf("%s doesn't exist.\n", folder);
                 continue;
             }
-            for(i = 0; i < nodecount; i++)                                              // check whether file already exists in the specified directory
+            for(i = 0; i < nodecount; i++)                                              // check whether directory exists in the specified location
                 if (filesystem[i].type == 'd' && !strcmp(filesystem[i].location, folder) && !strcmp(filesystem[i].name, filename))
                     break;
-            if(i == nodecount){
+            if(i == nodecount){                                                         // directory not found
                 printf("%s not found in %s.\n", filename, folder);
                 continue;
             }
-            printf("File '%s' found in %s.\n", filename, folder);
-            printf(" Size: %d KB\n", filesystem[j].size);
-            printf(" File Count (including the directory itself): %d\n", filesystem[j].filecount);
-            printf(" Created On: %s\n", filesystem[j].created);
-            printf(" Permissions: %s %s %s\n", filesystem[j].permissions&(1<<2)?"Read":"-", filesystem[j].permissions&(1<<1)?"Write":"-", filesystem[j].permissions&1?"Execute":"-");
+            printf("Directory '%s' found in %s.\n", filename, folder);
+            printf(" Size: %d KB\n", filesystem[i].size);
+            printf(" Child Count (including the directory itself): %d\n", filesystem[i].filecount);
+            printf(" Created On: %s\n", filesystem[i].created);
+            printf(" Permissions: %s %s %s\n", filesystem[i].permissions&(1<<2)?"Read":"-", filesystem[i].permissions&(1<<1)?"Write":"-", filesystem[i].permissions&1?"Execute":"-");
             printf(" Deleted %s successfully.\n", folder);
-            if(strcmp(folder, "Root")){
+            if(strcmp(folder, "Root")){                                                 // the location is compared with 'root' separately as root is not a defined directory
                 filesystem[j].childcount--;
                 filesystem[j].size -= filesystem[i].size;
                 printf(" Remaining file count inside %s: %d\n", filesystem[j].name, filesystem[j].childcount - 1);
             }
-            for (j = 0; j < i; j++) {
+            for (j = 0; j < i; j++) {                                                   // reassign links
                 if (filesystem[j].childlink == filesystem[i].id){
                     filesystem[j].childlink = filesystem[i].siblinglink;
                     break;
@@ -803,7 +798,7 @@ void hierarchical(const char * path){
                     break;
                 }
             }
-            for(i = 0; i < nodecount; i++){
+            for(i = 0; i < nodecount; i++){                                             // delete by overwriting
                 if(!strcmp(filesystem[i].location, filename) || (!strcmp(filesystem[i].name, filename) && filesystem[i].type == 'd')) {
                     for (j = i--; j < nodecount - 1; j++)
                         filesystem[j] = filesystem[j + 1];
@@ -816,7 +811,7 @@ void hierarchical(const char * path){
         }
     } while (1);
 
-    for(i = 0; i < nodecount; i++){
+    for(i = 0; i < nodecount; i++){                                                     // write output to file
         fprintf(output, " ID #%d\n", filesystem[i].id);
         fprintf(output, " Name: %s\n", filesystem[i].name);
         fprintf(output, " Children Count: %d\n", filesystem[i].childcount);
@@ -838,16 +833,34 @@ void hierarchical(const char * path){
 int main(int argc, char const *argv[]) {
     int i = 1;
 
-
-
     if((argc == 1) || (argc % 2 == 0)){                              // display documentation if no input file or incorrect options specified
         printf("\nUSAGE: %s -OPTION INPUT_FILENAME [-OPTION(s) INPUT_FILENAME(s)]\n", argv[0]);
 
         printf("\nOPTIONS:\n");
         printf("       -s INPUT_FILENAME : Uses the Single Level Directory Structure\n");
-        printf("       -h INPUT_FILENAME : Uses the Two-Level Directory Structure\n");
+        printf("       -t INPUT_FILENAME : Uses the Two-Level Directory Structure\n");
         printf("       -h INPUT_FILENAME : Uses the Hierarchical Directory Structure\n");
-        printf("       (Example: %s -s onelevelinput.txt -h hierarchicalinput.txt)\n", argv[0]);
+        printf("       (Example: %s -s single.txt -h hierarchical.txt)\n", argv[0]);
+
+        printf("\nINPUT:\n");
+        printf("   The input files provide the initial state of the filesystem.\n");
+        printf("   Every directory and file is a node in the filesystem.\n\n");
+        printf("   Each node is represented by 7 lines in the input files.\n");
+        printf("   (Eg. If there are 3 initial nodes, there will be 21 lines in the input file.)\n");
+        printf("   The first line is the name of the file/directory.\n");
+        printf("   The second line is the file count (1 for files, 1 + files inside for directories).\n");
+        printf("   The third line specifies the location of the file/directory.\n");
+        printf("   The fourth line specifies the type of the node (f for files and d for directories).\n");
+        printf("   The fifth line specifies the size of the node (1KB fixed for directories).\n");
+        printf("   The sixth line is the date of creation of the file/directory.\n");
+        printf("   The seventh line specifies the permissions for the node (r for read, w for write and x for execute).\n");
+        printf("   (Eg. rwx, wx, rx, etc.)\n\n");
+        printf("   For SINGLE LEVEL Directory Structure, the first node in the input file should be the root directory.\n");
+        printf("   No additional directories can be created.\n");
+        printf("   For TWO LEVEL Directory Structure, directories can only be created at the root,\n   and files only in directories.\n");
+
+        printf("\nOUTPUT:\n   A text file for each type of directory structure used,\n   \"single_level_output.txt\", \"two_level_output.txt\" and \"hierarchical_output.txt\" respectively.\n   If the file doesn't exist, a new file will be automatically created.\n   If the file exists, the new output will overwrite the original file.\n\n");
+
         exit(0);
     }
     else{
