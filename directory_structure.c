@@ -650,7 +650,7 @@ void hierarchical(const char * path){
             if (strcmp(folder, "Root"))
                 filesystem[j].childcount++;                                                  // increment file count for directory
             filesystem[nodecount].childlink = filesystem[nodecount].siblinglink = 0;
-            for(i = nodecount - 1; i >= j; i--){
+            for(i = nodecount - 1; i >= 0; i--){
                 if (!strcmp(folder, filesystem[i].location)){
                     filesystem[i].siblinglink = filesystem[nodecount].id;
                     break;
