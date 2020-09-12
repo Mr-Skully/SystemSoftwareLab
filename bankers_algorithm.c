@@ -6,14 +6,16 @@
 #define MaxProcesses 10                         // maximum possible number of processes
 
 int sequence[MaxProcesses];                     // global array to store the safe sequence
+int safe_sequence_available;                    // global flag to mark whether the sequence is safe
 FILE *output;                                   // global pointer to output file
 
 void safety_check(int need[][ResourceTypesCount], int allocated[][ResourceTypesCount], int available[], int n){   // to perform safety check for current state
     int i, j, k = 0;
     int finished[n];
     int work[ResourceTypesCount];
+    safe_sequence_available = 0;
     for(i = 0; i < n; i++)                                          // reset safe sequence array
-        sequence[i] = 0;
+        sequence[i] = -1;
     for(i = 0; i < n; i++)                                          // initializing FINISHED array to zero
         finished[i] = 0;
     for(i = 0; i < ResourceTypesCount; i++)                         // initializing WORK array to AVAILABLE
@@ -35,8 +37,11 @@ void safety_check(int need[][ResourceTypesCount], int allocated[][ResourceTypesC
             finished[i]++;                                          // mark the process as completed
             break;
         }
-        if (i == n)                                                 // when a whole linear scan goes by and no process could complete execution in that scan
+        if (i == n) {                                                 // when a whole linear scan goes by and no process could complete execution in that scan
+            if(k == n)
+                safe_sequence_available++;
             return;
+        }
     }
 }
 
@@ -135,7 +140,7 @@ int main(int argc, char const *argv[]) {
     fprintf(output, "----------------\n\nINITIAL STATE:\n");
     safety_check(need, allocated, available, n);                    // run the safety check algorithm for the initial state
     print_need(need, n);                                            // print NEED matrix initially
-    if(sequence[n-1])                                               // system is safe initially
+    if(safe_sequence_available)                                               // system is safe initially
         print_request_status(n, 1);
     else{                                                           // system is in deadlock initially
         printf("\n[.] Deadlocked input provided. All requests denied. Terminating...\n\n");
@@ -175,7 +180,7 @@ int main(int argc, char const *argv[]) {
         }
         safety_check(need, allocated, available, n);                           // check if the system is in safe state after servicing the request
         print_need(need, n);                                        // print NEED matrix and safe sequence (if any)
-        print_request_status(n, sequence[ResourceTypesCount]?1:0);
+        print_request_status(n, safe_sequence_available?1:0);
         for(j = 0; j < ResourceTypesCount; j++){                    // undo the changes to NEED, ALLOCATION and AVAILABLE
             need[request[i][ResourceTypesCount]][j] += request[i][j];
             available[j] += request[i][j];
