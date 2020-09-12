@@ -5,9 +5,10 @@
 #define ResourceTypesCount 3                    // types of resources in system
 #define MaxProcesses 10                         // maximum possible number of processes
 
-int sequence[MaxProcesses];                     // array to store the safe sequence
+int sequence[MaxProcesses];                     // global array to store the safe sequence
+FILE *output;                                   // global pointer to output file
 
-void safety_check(int need[][ResourceTypesCount], int allocated[][ResourceTypesCount], int available[], int n){              // perform safety check for current state
+void safety_check(int need[][ResourceTypesCount], int allocated[][ResourceTypesCount], int available[], int n){   // to perform safety check for current state
     int i, j, k = 0;
     int finished[n];
     int work[ResourceTypesCount];
@@ -18,51 +19,51 @@ void safety_check(int need[][ResourceTypesCount], int allocated[][ResourceTypesC
     for(i = 0; i < ResourceTypesCount; i++)                         // initializing WORK array to AVAILABLE
         work[i] = available[i];
 
-    while(1) {
+    while(1) {                                                      // to simulate a resource scheduler running until it's no longer needed
         for (i = 0; i < n; i++) {
-            if(finished[i])
+            if(finished[i])                                         // ignore if this process is already completed
                 continue;
-            for(j = 0; j < ResourceTypesCount; j++){
+            for(j = 0; j < ResourceTypesCount; j++){                // check if NEED <= WORK
                 if(need[i][j] > work[j])
                     break;
             }
-            if (j < ResourceTypesCount)
+            if (j < ResourceTypesCount)                             // NEED > WORK
                 continue;
-            sequence[k++] = i;
-            for(j = 0; j < ResourceTypesCount; j++)
+            sequence[k++] = i;                                      // append the process no. to safe sequence
+            for(j = 0; j < ResourceTypesCount; j++)                 // simulate allocating the resources needed by the process, and then reacquire everything after it finishes execution
                 work[j] += allocated[i][j];
-            finished[i]++;
+            finished[i]++;                                          // mark the process as completed
             break;
         }
-        if (i == n)
+        if (i == n)                                                 // when a whole linear scan goes by and no process could complete execution in that scan
             return;
     }
 }
 
-void print_need(int need[][ResourceTypesCount], int n){                                 // print NEED matrix
+void print_need(int need[][ResourceTypesCount], int n){             // to print NEED matrix
     int i, j;
-    printf("\n----- NEED -----\n");
+    fprintf(output, "\n----- NEED -----\n");
     for(i = 0; i < ResourceTypesCount; i++)
-        printf("  %c   ", A + i);
+        fprintf(output, "  %c   ", A + i);
     for(i = 0; i < n; i++){
-        printf("\n");
+        fprintf(output, "\n");
         for(j = 0; j < ResourceTypesCount; j++)
-            printf("  %-4d", need[i][j]);
+            fprintf(output, "  %-4d", need[i][j]);
     }
-    printf("\n");
+    fprintf(output, "\n");
 }
 
-void print_request_status(int n, int safe){                                                // print safe sequence or reject message
+void print_request_status(int n, int safe){                         // to print safe sequence or reject message
     if(!safe){                                                      // request rejected
-        printf("\nRequest Denied.\n----------------\n");
+        fprintf(output, "\nRequest Denied.\n----------------\n");
         return;
     }
 
     int i = 0;                                                      // print safe sequence
-    printf("\nSafe Sequence: ");
+    fprintf(output, "\nSafe Sequence: ");
     for(;i < n - 1; i++)
-        printf("P%d -> ", sequence[i]);
-    printf("P%d\n----------------\n");
+        fprintf(output, "P%d -> ", sequence[i]);
+    fprintf(output, "P%d\n----------------\n", sequence[n-1]);
 }
 
 int main(int argc, char const *argv[]) {
@@ -73,14 +74,14 @@ int main(int argc, char const *argv[]) {
         need[MaxProcesses][ResourceTypesCount],                     // resources still needed by each process
         request[MaxProcesses][ResourceTypesCount + 1];              // resource allocation requests, where the 4th column represents the process number (numbering starts from 0)
 
-    FILE *input, *output;                                           // file pointers
-//    output = fopen(".\\bankers_algo_output.txt", "a");            // open file for writing output
-//    if(!output){
-//        printf("\n[.] Could not open output file.\n");
-//        exit(1);
-//    }
+    FILE *input;                                           // file pointers
+    output = fopen(".\\bankers_algo_output.txt", "w");              // open file for writing output
+    if(!output){
+        printf("\n[.] Could not open output file.\n");
+        exit(1);
+    }
 
-    if(argc != 2) {                              // display documentation if no input file is specified
+    if(argc != 2) {                                                 // display documentation if no input file is specified
         printf("\nUSAGE: %s INPUT_FILENAME\n", argv[0]);
 
         printf("\nINPUT:\n   A text file.");
@@ -131,8 +132,8 @@ int main(int argc, char const *argv[]) {
 
     printf("\n[.] Using Banker's algorithm for deadlock detection.\n");
 
-    printf("----------------\n\nINITIAL STATE:\n");
-    safety_check(need, allocated, available, n);                               // run the safety check algorithm for the initial state
+    fprintf(output, "----------------\n\nINITIAL STATE:\n");
+    safety_check(need, allocated, available, n);                    // run the safety check algorithm for the initial state
     print_need(need, n);                                            // print NEED matrix initially
     if(sequence[n-1])                                               // system is safe initially
         print_request_status(n, 1);
@@ -140,7 +141,7 @@ int main(int argc, char const *argv[]) {
         printf("\n[.] Deadlocked input provided. All requests denied. Terminating...\n\n");
         exit(1);
     }
-    printf("\nREQUESTS:\n");
+    fprintf(output, "\nREQUESTS:\n");
 
     for(i = 0; i < r; i++){                                         // perform BANKER'S ALGORITHM for each request
         valid = 1;
@@ -182,7 +183,7 @@ int main(int argc, char const *argv[]) {
         }
     }
 
-//    fclose(output);
-//    printf("\n[.] Writing output to bankers_algo_output.txt.\n");
-//    printf("\n[.] DONE\n\n");
+    fclose(output);
+    printf("\n[.] Writing output to bankers_algo_output.txt.\n");
+    printf("\n[.] DONE\n\n");
 }
