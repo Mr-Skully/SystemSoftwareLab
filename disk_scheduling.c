@@ -93,7 +93,7 @@ int main(int argc, char const *argv[]) {
         printf("\n   The remaining lines contain one integer each, with each integer");
         printf("\n   representing (the sector number/index of) a disk I/O request.");
 
-        printf("\nOUTPUT:\n   A text file, \"ds_output.txt\".\n   If the file doesn't exist, a new file will be automatically created.\n   If the file exists, the new output will be appended the original file.\n\n");
+        printf("\nOUTPUT:\n   A text file, \"ds_output.txt\".\n   If the file doesn't exist, a new file will be automatically created.\n   If the file exists, the new output will be appended to the original file.\n\n");
         exit(0);
     }
 
