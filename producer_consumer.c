@@ -103,10 +103,10 @@ int main(int argc, char const *argv[]) {
         printf("\n   The next line contains a positive integer 'n',");
         printf("\n   which denotes number of times the producer/consumer can");
         printf("\n   produce/consume into/from the buffer.");
-        printf("\n   The next line 'n' contains one integer on each line,");
+        printf("\n   The next 'n' lines contains one integer on each line,");
         printf("\n   each integer denoting the production rate of the producer");
         printf("\n   each time it is called to produce into the buffer.");
-        printf("\n   The next line 'n' contains one integer on each line,");
+        printf("\n   The next 'n' lines contains one integer on each line,");
         printf("\n   each integer denoting the consumption rate of the consumer");
         printf("\n   each time it is called to consume from the buffer.");
 
