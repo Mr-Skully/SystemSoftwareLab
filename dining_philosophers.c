@@ -4,37 +4,37 @@
 #include <stdlib.h>                                                 // for exit()
 #include <time.h>                                                   // for time()
 #include <windows.h>                                                // for Sleep(microseconds) in Windows; use unistd.h for sleep(seconds) in Linux
-#define BITES 5                                                     // the number of bites it takes to finish a bowl of spaghetti
+#define BITES 3                                                     // the number of bites it takes to finish a bowl of spaghetti
 #define PHILOSOPHERS 5
 
-sem_t chopstick[PHILOSOPHERS];
+sem_t chopstick[PHILOSOPHERS];                                      // define the chopsticks (semaphores)
 
-void * phil(void * num){
-    int i, sleep_time;                                              // variable for counting
+void * phil(void * num){                                   // the philosopher thread
+    int i;                                                          // variable for counting
     int id = (int)num + 1;                                          // to identify the philosophers
     int right = (int)num;                                           // the right chopstick
     int left = ((int)num+1) % PHILOSOPHERS;                         // the left chopstick
 
     srand(time(0));                                                 // seed rand() with current time
 
-    for(i = 1; i <= BITES; i++) {
-        Sleep(500 + rand() % 1000);
-        if(left < right) {
-            sem_wait(&chopstick[left]);
-            sem_wait(&chopstick[right]);
+    for(i = 1; i <= BITES; i++) {                          // run until the philosopher finishes the bowl of spaghetti
+        Sleep(100 + rand() % 1000);                                 // think for a random time
+        if(left < right) {                                 // Resource Hierarchy Solution for Avoiding Deadlocks, as proposed by Edsger W. Dijkstra
+            sem_wait(&chopstick[left]);                             // pick up the chopstick, or wait for it if it's currently being used
+            sem_wait(&chopstick[right]);                            // pick up the chopstick, or wait for it if it's currently being used
         }
         else {
-            sem_wait(&chopstick[right]);
-            sem_wait(&chopstick[left]);
+            sem_wait(&chopstick[right]);                            // pick up the chopstick, or wait for it if it's currently being used
+            sem_wait(&chopstick[left]);                             // pick up the chopstick, or wait for it if it's currently being used
         }
-        printf("Philosopher #%d picked up the chopsticks (#%d, #%d) and started eating.\n", id, left+1, right+1);
-        Sleep(500 + rand() % 1000);
+        printf("Philosopher #%d picked up the chopsticks (#%d, #%d) and started eating. (Bite: %d/%d)\n", id, left+1, right+1, i, BITES);
+        Sleep(500 + rand() % 1000);                                 // eat for a random time
         printf("Philosopher #%d finished eating, set down the chopsticks (#%d, #%d), and started thinking.\n", id, left+1, right+1);
-        sem_post(&chopstick[left]);
-        sem_post(&chopstick[right]);
+        sem_post(&chopstick[left]);                                 // keep the chopstick back on the table
+        sem_post(&chopstick[right]);                                // keep the chopstick back on the table
     }
-    
-    return NULL;
+    printf("Philosopher #%d left the room.\n", id);
+    pthread_exit(NULL);                                             // exit from the thread
 }
 
 int main(int argc, char const *argv[]) {
