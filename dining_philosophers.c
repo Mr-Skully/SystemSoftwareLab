@@ -14,11 +14,14 @@ void * phil(void * num){                                   // the philosopher th
     int id = (int)num + 1;                                          // to identify the philosophers
     int right = (int)num;                                           // the right chopstick
     int left = ((int)num+1) % PHILOSOPHERS;                         // the left chopstick
-
+    clock_t wait_start, wait_end;                                   // clock variables to measure waiting time
+    double waiting_time;                                            // to store waiting time
     srand(time(0));                                                 // seed rand() with current time
 
     for(i = 1; i <= BITES; i++) {                          // run until the philosopher finishes the bowl of spaghetti
-        Sleep(100 + rand() % 1000);                                 // think for a random time
+        Sleep(500 + rand() % 1000);                                 // think for a random time
+        printf("Philosopher #%d is hungry.\n", id);
+        wait_start = clock();
         if(left < right) {                                 // Resource Hierarchy Solution for Avoiding Deadlocks, as proposed by Edsger W. Dijkstra
             sem_wait(&chopstick[left]);                             // pick up the chopstick, or wait for it if it's currently being used
             sem_wait(&chopstick[right]);                            // pick up the chopstick, or wait for it if it's currently being used
@@ -27,8 +30,10 @@ void * phil(void * num){                                   // the philosopher th
             sem_wait(&chopstick[right]);                            // pick up the chopstick, or wait for it if it's currently being used
             sem_wait(&chopstick[left]);                             // pick up the chopstick, or wait for it if it's currently being used
         }
-        printf("Philosopher #%d picked up the chopsticks (#%d, #%d) and started eating. (Bite: %d/%d)\n", id, left+1, right+1, i, BITES);
-        Sleep(500 + rand() % 1000);                                 // eat for a random time
+        wait_end = clock();
+        waiting_time = ((double)(wait_end - wait_start)) / CLOCKS_PER_SEC;
+        printf("Philosopher #%d picked up the chopsticks (#%d, #%d) and started eating. (Waited for %.3f seconds.)(Bite: %d/%d)\n", id, left+1, right+1, waiting_time, i, BITES);
+        Sleep(1000 + rand() % 1000);                                 // eat for a random time
         printf("Philosopher #%d finished eating, set down the chopsticks (#%d, #%d), and started thinking.\n", id, left+1, right+1);
         sem_post(&chopstick[left]);                                 // keep the chopstick back on the table
         sem_post(&chopstick[right]);                                // keep the chopstick back on the table
