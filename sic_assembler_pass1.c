@@ -142,7 +142,7 @@ int main(int argc, char const *argv[]) {
     fclose(optab);                                                  // close the optab file
     fclose(input);                                                  // close the input file
     fclose(output);                                                 // close the output file
-    printf("[.] Wrote output with location column to output.txt.\n");
+    printf("[.] Wrote output to output.txt.\n");
 
     symfile = fopen("symtab.txt", "w");                             // open symbols table file
     int i;
