@@ -32,7 +32,7 @@ char * getOpcode(struct opcodeTable optab[], char mnemonic[5]){                 
 char * getSymcode(struct symbolsTable symtab[], char symbol[11]) {                                 // search symbols table for a label and return its location
     int i;
     for(i = 0; i < symtabLength; i++)
-        if (!strcmp(symbol, symtab[i].label))
+        if (!strcmp(symbol, symtab[i].label) && strcmp(symtab[i].loc, "*")!=0)
             return symtab[i].loc;
 }
 
@@ -46,31 +46,17 @@ int checkOptab(struct opcodeTable optab[], char mnemonic[5]){                   
 int checkSymtab(struct symbolsTable symtab[], char symbol[11]) {                                 // search symbols table for a label and return its location
     int i;
     for(i = 0; i < symtabLength; i++)
-        if (!strcmp(symbol, symtab[i].label))
+        if (!strcmp(symbol, symtab[i].label) && strcmp(symtab[i].label, "*")!=0)
             return 1;
     return 0;
-}
-
-int searchFwdRef(struct symbolsTable fwdRef[], char symbol[11]){
-    int i, j, returnValue;
-    for(i = 0; i < fwdRefLength; i++){
-        if(!strcmp(fwdRef[i].label, symbol)){
-            returnValue = atoi(fwdRef[i].loc);
-            for(j = i + 1; j < fwdRefLength; j++)
-                fwdRef[j-1] = fwdRef[j];
-            fwdRefLength--;
-            return returnValue;
-        }
-    }
-    return -1;
 }
 
 int main(){
     struct opcodeTable optab[10];
     struct symbolsTable symtab[10], forwardReferences[10];
     struct TRecord textrec;
-    int locCtr = 0, startLoc = 0, reference;
-    char label[11], opcode[5], operand[11], temp[11];
+    int locCtr = 0, startLoc = 0;
+    char label[11], opcode[6], operand[11], temp[11];
     FILE *inputFile, *outputFile, *symtabFile, *optabFile, *resultFile;
     int i;
     inputFile = fopen("input.txt", "r");
@@ -90,7 +76,10 @@ int main(){
     while (fscanf(optabFile, "%s %s", optab[optabLength].mnemonic, optab[optabLength].value) == 2){
         optabLength++;
     }
-    fscanf(inputFile, "%s %s %s", label, opcode, operand);
+    if (fscanf(inputFile, "%s %s %s", label, opcode, operand) != 3){
+        printf("\n[.] Incorrect format.\n\n");
+        exit(1);
+    }
     if(!strcmp(opcode, "START")){
         locCtr = atoi(operand);
         startLoc = locCtr;
@@ -120,21 +109,9 @@ int main(){
                 strcpy(symtab[symtabLength].label, label);
                 itoa(locCtr, symtab[symtabLength].loc, 10);
                 symtabLength++;
-                reference = searchFwdRef(forwardReferences, label);
-                while(reference > -1){
-                    if(textrec.size > 0){
-                        fprintf(resultFile, "\nT^%06.6d^%02.2d%s", textrec.start, textrec.size, textrec.record);
-                        textrec.count = textrec.size = 0;
-                        textrec.start = locCtr + 3;
-                        strcpy(textrec.record, "");
-                    }
-                    fprintf(resultFile, "\nT^%d^02^%d", reference, locCtr);
-                    fprintf(outputFile, "%d\t%d\n", reference, locCtr);
-                    reference = searchFwdRef(forwardReferences, label);
-                }
                 locCtr += 3;
                 if(textrec.count == 10){
-                    fprintf(resultFile, "\nT^%06.6d^%02.2d%s", textrec.start, textrec.size, textrec.record);
+                    fprintf(resultFile, "\nT^%06.6d^%02x%s", textrec.start, textrec.size, textrec.record);
                     textrec.count = textrec.size = 0;
                     textrec.start = locCtr;
                     strcpy(textrec.record, "");
@@ -149,21 +126,9 @@ int main(){
                 strcpy(symtab[symtabLength].label, label);
                 itoa(locCtr, symtab[symtabLength].loc, 10);
                 symtabLength++;
-                reference = searchFwdRef(forwardReferences, label);
-                while(reference > -1){
-                    if(textrec.size > 0){
-                        fprintf(resultFile, "\nT^%06.6d^%02.2d%s", textrec.start, textrec.size, textrec.record);
-                        textrec.count = textrec.size = 0;
-                        textrec.start = locCtr + 1;
-                        strcpy(textrec.record, "");
-                    }
-                    fprintf(resultFile, "\nT^%d^02^%d", reference, locCtr);
-                    fprintf(outputFile, "%d\t%d\n", reference, locCtr);
-                    reference = searchFwdRef(forwardReferences, label);
-                }
                 locCtr++;
                 if(textrec.count == 10){
-                    fprintf(resultFile, "\nT^%06.6d^%02.2d%s", textrec.start, textrec.size, textrec.record);
+                    fprintf(resultFile, "\nT^%06.6d^%02x%s", textrec.start, textrec.size, textrec.record);
                     textrec.count = textrec.size = 0;
                     textrec.start = locCtr;
                     strcpy(textrec.record, "");
@@ -175,21 +140,9 @@ int main(){
                 strcpy(symtab[symtabLength].label, label);
                 itoa(locCtr, symtab[symtabLength].loc, 10);
                 symtabLength++;
-                reference = searchFwdRef(forwardReferences, label);
-                while(reference > -1){
-                    if(textrec.size > 0){
-                        fprintf(resultFile, "\nT^%06.6d^%02.2d%s", textrec.start, textrec.size, textrec.record);
-                        textrec.count = textrec.size = 0;
-                        textrec.start = locCtr + atoi(operand);
-                        strcpy(textrec.record, "");
-                    }
-                    fprintf(resultFile, "\nT^%d^02^%d", reference, locCtr);
-                    fprintf(outputFile, "%d\t%d\n", reference, locCtr);
-                    reference = searchFwdRef(forwardReferences, label);
-                }
                 locCtr += atoi(operand);
                 if(textrec.count >= 10){
-                    fprintf(resultFile, "\nT^%06.6d^%02.2d%s", textrec.start, textrec.size, textrec.record);
+                    fprintf(resultFile, "\nT^%06.6d^%02x%s", textrec.start, textrec.size, textrec.record);
                     textrec.count = textrec.size = 0;
                     textrec.start = locCtr;
                     strcpy(textrec.record, "");
@@ -201,21 +154,9 @@ int main(){
                 strcpy(symtab[symtabLength].label, label);
                 itoa(locCtr, symtab[symtabLength].loc, 10);
                 symtabLength++;
-                reference = searchFwdRef(forwardReferences, label);
-                while(reference > -1){
-                    if(textrec.size > 0){
-                        fprintf(resultFile, "\nT^%06.6d^%02.2d%s", textrec.start, textrec.size, textrec.record);
-                        textrec.count = textrec.size = 0;
-                        textrec.start = locCtr + (3 * atoi(operand));
-                        strcpy(textrec.record, "");
-                    }
-                    fprintf(resultFile, "\nT^%d^02^%d", reference, locCtr);
-                    fprintf(outputFile, "%d\t%d\n", reference, locCtr);
-                    reference = searchFwdRef(forwardReferences, label);
-                }
                 locCtr += (3 * atoi(operand));
                 if(textrec.count >= 10){
-                    fprintf(resultFile, "\nT^%06.6d^%02.2d%s", textrec.start, textrec.size, textrec.record);
+                    fprintf(resultFile, "\nT^%06.6d^%02x%s", textrec.start, textrec.size, textrec.record);
                     textrec.count = textrec.size = 0;
                     textrec.start = locCtr;
                     strcpy(textrec.record, "");
@@ -230,18 +171,6 @@ int main(){
                     strcpy(symtab[symtabLength].label, label);
                     itoa(locCtr, symtab[symtabLength].loc, 10);
                     symtabLength++;
-                    reference = searchFwdRef(forwardReferences, label);
-                    while (reference > -1) {
-                        if (textrec.size > 0) {
-                            fprintf(resultFile, "\nT^%06.6d^%02.2d%s", textrec.start, textrec.size, textrec.record);
-                            textrec.count = textrec.size = 0;
-                            textrec.start = locCtr;
-                            strcpy(textrec.record, "");
-                        }
-                        fprintf(resultFile, "\nT^%d^02^%d", reference, locCtr);
-                        fprintf(outputFile, "%d\t%d\n", reference, locCtr);
-                        reference = searchFwdRef(forwardReferences, label);
-                    }
                 }
                 if (!checkOptab(optab, opcode)){
                     printf("\n[.] Operation \"%s\" is invalid.\n\n", opcode);
@@ -262,15 +191,31 @@ int main(){
                     fwdRefLength++;
                 }
                 locCtr += 3;
+                if(textrec.count == 10){
+                    fprintf(resultFile, "\nT^%06.6d^%02x%s", textrec.start, textrec.size, textrec.record);
+                    textrec.count = textrec.size = 0;
+                    textrec.start = locCtr;
+                    strcpy(textrec.record, "");
+                }
             }
         }
         else{
             if(textrec.count > 0)
-                fprintf(resultFile, "\nT^%06.6d^%02.2d%s", textrec.start, textrec.size, textrec.record);
+                fprintf(resultFile, "\nT^%06.6d^%02x%s", textrec.start, textrec.size, textrec.record);
+            for(i = 0; i < fwdRefLength; i++){
+                if (!checkSymtab(symtab, forwardReferences[i].label)){
+                    printf("\n[.] Symbol \"%s\" is not declared.\n\n", forwardReferences[i].label);
+                    exit(1);
+                }
+                fprintf(outputFile, "%s\t%s\n", forwardReferences[i].loc, getSymcode(symtab, forwardReferences[i].label));
+                fprintf(resultFile, "\nT^%06.6d^02^%s", atoi(forwardReferences[i].loc), getSymcode(symtab, forwardReferences[i].label));
+            }
             fprintf(resultFile, "\nE^%06.6d", startLoc);
             break;
         }
     }
+    fseek(resultFile, 16, SEEK_SET);
+    fprintf(resultFile, "%06x", locCtr - startLoc);
     for(i = 0; i < symtabLength; i++)
         fprintf(symtabFile, "%s\t%s\n", symtab[i].label, symtab[i].loc);
     fclose(inputFile);
