@@ -1,5 +1,4 @@
 /*
- * 0000 cannot be used stored in the hash table, as it is the default state of each slot.
  * Labels should have a maximum size of only 4 characters.
 */
 
